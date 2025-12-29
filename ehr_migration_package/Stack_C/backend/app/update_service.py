@@ -182,10 +182,19 @@ class UpdateService:
             # 6. Áp dụng config mới (nếu có)
             config_result = await self._apply_config(package.get("config", {}))
             
-            # 7. Lưu version mới
+            # 7. Đếm tổng số rules từ database (sau khi upsert)
+            total_rules = 0
+            if self.db:
+                cursor = self.db.cursor()
+                cursor.execute("SELECT COUNT(*) FROM siem_law_rules")
+                result = cursor.fetchone()
+                total_rules = result[0] if result else 0
+                cursor.close()
+            
+            # 8. Lưu version mới
             self._save_current_version({
                 "version": new_version,
-                "rules_count": rules_result.get("count", 0),
+                "rules_count": total_rules,
                 "policies_count": policies_result.get("count", 0),
                 "backup_path": backup_result.get("backup_path")
             })
@@ -252,14 +261,21 @@ class UpdateService:
             # UPSERT: Insert or Update by rule_code (không TRUNCATE)
             insert_query = """
                 INSERT INTO siem_law_rules 
-                (rule_code, rule_name, functional_group, law_source, allowed_status, explanation)
-                VALUES (%s, %s, %s, %s, %s, %s)
+                (rule_code, rule_name, functional_group, law_source, allowed_status, 
+                 explanation, legal_basis, log_fields, auto_checks, penalty_level, law_url, rule_scope)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON DUPLICATE KEY UPDATE
                     rule_name = VALUES(rule_name),
                     functional_group = VALUES(functional_group),
                     law_source = VALUES(law_source),
                     allowed_status = VALUES(allowed_status),
                     explanation = VALUES(explanation),
+                    legal_basis = VALUES(legal_basis),
+                    log_fields = VALUES(log_fields),
+                    auto_checks = VALUES(auto_checks),
+                    penalty_level = VALUES(penalty_level),
+                    law_url = VALUES(law_url),
+                    rule_scope = VALUES(rule_scope),
                     updated_at = NOW()
             """
             
@@ -271,7 +287,13 @@ class UpdateService:
                     rule.get("functional_group"),
                     rule.get("law_source"),
                     rule.get("allowed_status"),
-                    rule.get("explanation", rule.get("description", ""))
+                    rule.get("explanation", rule.get("description", "")),
+                    rule.get("legal_basis"),
+                    rule.get("log_fields"),
+                    rule.get("auto_checks"),
+                    rule.get("penalty_level"),
+                    rule.get("law_url"),
+                    rule.get("rule_scope", "USER")
                 ))
                 count += 1
             

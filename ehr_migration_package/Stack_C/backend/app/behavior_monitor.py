@@ -618,7 +618,10 @@ class BehaviorMonitor:
             }
             prefix = prefix_map.get(system_rule_group)
             if prefix:
-                match_result = rule_code.startswith(prefix)
+                # Support test rules: SYS-AUTH-T01 matches SYS-AUTH- prefix
+                # Check if rule_code starts with prefix OR has -T variant (e.g., SYS-AUTH-T01)
+                base_prefix = prefix.rstrip('-')  # SYS-AUTH- → SYS-AUTH
+                match_result = rule_code.startswith(prefix) or rule_code.startswith(f"{base_prefix}-T")
                 logger.info(f"[RULE_MATCH] system_rule_group='{system_rule_group}' → prefix='{prefix}', rule_code='{rule_code}', match={match_result}")
                 return match_result
             # Fallback: if no system_rule_group found, try to match any SYS- rule
@@ -680,7 +683,9 @@ class BehaviorMonitor:
             }
             prefix = prefix_map.get(system_rule_group)
             if prefix:
-                match_result = rule_code.startswith(prefix)
+                # Support test rules: SYS-AUTH-T01 matches SYS-AUTH- prefix
+                base_prefix = prefix.rstrip('-')  # SYS-AUTH- → SYS-AUTH
+                match_result = rule_code.startswith(prefix) or rule_code.startswith(f"{base_prefix}-T")
                 logger.info(f"[RULE_MATCH] system_rule_group='{system_rule_group}' → prefix='{prefix}', rule_code='{rule_code}', match={match_result}")
                 return match_result
             # Fallback: if no system_rule_group found, try to match any SYS- rule
