@@ -239,7 +239,7 @@ class UpdateService:
             }
     
     async def _apply_rules(self, rules: list) -> Dict[str, Any]:
-        """Import rules mới vào database"""
+        """Import rules mới vào database - UPSERT mode (không xóa rules cũ)"""
         if not rules:
             return {"count": 0, "status": "no_changes"}
         
@@ -249,40 +249,36 @@ class UpdateService:
             
             cursor = self.db.cursor()
             
-            # Clear existing rules
-            cursor.execute("TRUNCATE TABLE siem_law_rules")
-            
-            # Insert new rules
+            # UPSERT: Insert or Update by rule_code (không TRUNCATE)
             insert_query = """
                 INSERT INTO siem_law_rules 
-                (rule_id, rule_name, functional_group, rule_scope, article, clause, point,
-                 allowed_status, description, law_source, effective_date, details, evaluation_criteria)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                (rule_code, rule_name, functional_group, law_source, allowed_status, explanation)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                ON DUPLICATE KEY UPDATE
+                    rule_name = VALUES(rule_name),
+                    functional_group = VALUES(functional_group),
+                    law_source = VALUES(law_source),
+                    allowed_status = VALUES(allowed_status),
+                    explanation = VALUES(explanation),
+                    updated_at = NOW()
             """
             
             count = 0
             for rule in rules:
                 cursor.execute(insert_query, (
-                    rule.get("rule_id"),
+                    rule.get("rule_code"),
                     rule.get("rule_name"),
                     rule.get("functional_group"),
-                    rule.get("rule_scope"),
-                    rule.get("article"),
-                    rule.get("clause"),
-                    rule.get("point"),
-                    rule.get("allowed_status"),
-                    rule.get("description"),
                     rule.get("law_source"),
-                    rule.get("effective_date"),
-                    rule.get("details"),
-                    rule.get("evaluation_criteria")
+                    rule.get("allowed_status"),
+                    rule.get("explanation", rule.get("description", ""))
                 ))
                 count += 1
             
             self.db.commit()
             cursor.close()
             
-            logger.info(f"Imported {count} rules")
+            logger.info(f"Upserted {count} rules")
             return {"count": count, "status": "success"}
             
         except Exception as e:
