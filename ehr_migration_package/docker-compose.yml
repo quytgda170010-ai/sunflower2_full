@@ -288,12 +288,11 @@ services:
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_REALM: ${KEYCLOAK_REALM:-ClinicRealm}
       KEYCLOAK_CLIENT_ID: siem-dashboard
-      CORS_ORIGINS: http://localhost:3002,http://siem-frontend:3002
+      KEYCLOAK_ADMIN_USER: admin
+      KEYCLOAK_ADMIN_PASSWORD: "123456789"
+      CORS_ORIGINS: http://103.82.39.79:3000,http://localhost:3002,http://siem-frontend:3002
       TZ: ${TZ:-Asia/Ho_Chi_Minh}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4-turbo-preview}
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+
     depends_on:
       mariadb:
         condition: service_healthy
