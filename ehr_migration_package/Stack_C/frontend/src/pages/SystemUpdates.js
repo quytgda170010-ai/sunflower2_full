@@ -25,7 +25,7 @@ import {
     NewReleases as NewReleasesIcon,
     Refresh as RefreshIcon,
 } from '@mui/icons-material';
-import api from '../api';
+import api from '../services/api';
 
 const SystemUpdates = () => {
     const [currentVersion, setCurrentVersion] = useState(null);
