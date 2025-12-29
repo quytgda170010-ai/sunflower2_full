@@ -219,8 +219,8 @@ services:
     expose:
       - "3000"
     environment:
-      REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:3000/gateway}
-      REACT_APP_KEYCLOAK_URL: ${REACT_APP_KEYCLOAK_URL:-http://localhost:8080}
+      REACT_APP_API_URL: http://103.82.39.79:3000/gateway
+      REACT_APP_KEYCLOAK_URL: http://103.82.39.79:8080
       REACT_APP_KEYCLOAK_REALM: ${KEYCLOAK_REALM:-ClinicRealm}
       REACT_APP_KEYCLOAK_CLIENT_ID: ${REACT_APP_KEYCLOAK_CLIENT_ID:-web-ui}
       TZ: ${TZ:-Asia/Ho_Chi_Minh}
@@ -262,8 +262,8 @@ services:
     expose:
       - "3001"
     environment:
-      REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:3000/gateway}
-      REACT_APP_KEYCLOAK_URL: ${REACT_APP_KEYCLOAK_URL:-http://localhost:8080}
+      REACT_APP_API_URL: http://103.82.39.79:3000/gateway
+      REACT_APP_KEYCLOAK_URL: http://103.82.39.79:8080
       REACT_APP_KEYCLOAK_REALM: ${KEYCLOAK_REALM:-ClinicRealm}
       REACT_APP_KEYCLOAK_CLIENT_ID: ${REACT_APP_KEYCLOAK_CLIENT_ID:-patient-portal}
       TZ: ${TZ:-Asia/Ho_Chi_Minh}
@@ -319,8 +319,8 @@ services:
     expose:
       - "3002"
     environment:
-      REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:3000}
-      REACT_APP_KEYCLOAK_URL: ${REACT_APP_KEYCLOAK_URL:-http://localhost:8080}
+      REACT_APP_API_URL: http://103.82.39.79:3000
+      REACT_APP_KEYCLOAK_URL: http://103.82.39.79:8080
       REACT_APP_KEYCLOAK_REALM: ${KEYCLOAK_REALM:-ClinicRealm}
       REACT_APP_KEYCLOAK_CLIENT_ID: ${REACT_APP_KEYCLOAK_CLIENT_ID:-siem-dashboard}
       TZ: ${TZ:-Asia/Ho_Chi_Minh}
