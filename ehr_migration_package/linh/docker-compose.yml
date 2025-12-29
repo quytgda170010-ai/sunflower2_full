@@ -1,0 +1,169 @@
+version: "3.9"
+
+services:
+  # ===== MariaDB cho OpenEMR =====
+  openemr-db:
+    image: mariadb:10.6
+    container_name: openemr-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${OE_DB_ROOT_PASS}
+      MYSQL_DATABASE: ${OE_DB_NAME}
+      MYSQL_USER: ${OE_DB_USER}
+      MYSQL_PASSWORD: ${OE_DB_PASS}
+      TZ: ${TZ}
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -uroot -p${OE_DB_ROOT_PASS} -h 127.0.0.1 --silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - oe-db:/var/lib/mysql
+    networks: [iam]
+
+  # ===== OpenEMR (nội bộ, không publish port) =====
+  openemr:
+    image: openemr/openemr:7.0.2
+    container_name: openemr
+    restart: unless-stopped
+    depends_on:
+      openemr-db:
+        condition: service_healthy
+    expose:
+      - "80"
+    environment:
+      MYSQL_HOST: openemr-db
+      MYSQL_ROOT_PASS: ${OE_DB_ROOT_PASS}
+      MYSQL_DATABASE: ${OE_DB_NAME}
+      MYSQL_USER: ${OE_DB_USER}
+      MYSQL_PASS: ${OE_DB_PASS}
+      OE_USER: ${OE_ADMIN_USER}
+      OE_PASS: ${OE_ADMIN_PASS}
+      TZ: ${TZ}
+    volumes:
+      - oe-sites:/var/www/localhost/htdocs/openemr/sites
+    labels:
+      co.ehr.app: "openemr"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost/ | grep -qi openemr || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    networks: [iam]
+
+  # ===== PostgreSQL cho Keycloak =====
+  postgres:
+    image: postgres:16
+    container_name: pg-keycloak
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${PG_DB}
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASS}
+      TZ: ${TZ}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks: [iam]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PG_USER} -d ${PG_DB} -h 127.0.0.1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # ===== Keycloak (import realm 1 lần) =====
+  keycloak:
+    image: quay.io/keycloak/keycloak:${KC_VERSION}
+    container_name: keycloak
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"            # http://localhost:8080
+    command:
+      - start
+      - --http-port=8080
+      - --hostname-strict=false
+      - --proxy=edge
+      - --db=postgres
+      - --db-url=jdbc:postgresql://postgres:5432/${PG_DB}
+      - --db-username=${PG_USER}
+      - --db-password=${PG_PASS}
+      - --import-realm
+    environment:
+      KEYCLOAK_ADMIN: ${KC_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KC_ADMIN_PASS}
+      TZ: ${TZ}
+    volumes:
+      - ./keycloak/realm-ClinicRealm.json:/opt/keycloak/data/import/realm-ClinicRealm.json:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health/ready >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    labels:
+      co.ehr.app: "keycloak"
+    networks: [iam]
+
+    # ===== oauth2-proxy (SSO Gateway cho OpenEMR) =====
+  oauth2-proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.12.0
+    container_name: oauth2-proxy
+    restart: unless-stopped
+    depends_on:
+      - keycloak
+      - openemr
+    ports:
+      - "8081:4180"
+    environment:
+      OAUTH2_PROXY_PROVIDER: "oidc"
+      OAUTH2_PROXY_SKIP_OIDC_DISCOVERY: "true"
+      OAUTH2_PROXY_OIDC_ISSUER_URL: "http://localhost:8080/realms/ClinicRealm"
+      OAUTH2_PROXY_LOGIN_URL: "http://localhost:8080/realms/ClinicRealm/protocol/openid-connect/auth"
+      OAUTH2_PROXY_REDEEM_URL: "http://keycloak:8080/realms/ClinicRealm/protocol/openid-connect/token"
+      OAUTH2_PROXY_OIDC_JWKS_URL: "http://keycloak:8080/realms/ClinicRealm/protocol/openid-connect/certs"
+      OAUTH2_PROXY_CLIENT_ID: "openemr-oidc"
+      OAUTH2_PROXY_CLIENT_SECRET: "ku6sHO8C12AiCoAn6sz1csS40m3tvFV0"
+      OAUTH2_PROXY_REDIRECT_URL: "http://localhost:8081/oauth2/callback"
+      OAUTH2_PROXY_UPSTREAMS: "http://openemr:80"
+      OAUTH2_PROXY_COOKIE_SECRET: "z2bd7qlgqzEZUqqh0LinU6h5myOIyghm" # tr -dc 'A-Za-z0-9' </dev/urandom | head -c 32 ; echo
+      OAUTH2_PROXY_COOKIE_SECURE: "false"
+      OAUTH2_PROXY_HTTP_ADDRESS: "0.0.0.0:4180"
+      OAUTH2_PROXY_SCOPE: "openid profile email roles"
+      OAUTH2_PROXY_CODE_CHALLENGE_METHOD: "S256"
+      OAUTH2_PROXY_EMAIL_DOMAINS: "*"
+      OAUTH2_PROXY_SKIP_PROVIDER_BUTTON: "true"
+      OAUTH2_PROXY_PASS_ACCESS_TOKEN: "true"
+      OAUTH2_PROXY_PASS_AUTHORIZATION_HEADER: "true"
+      OAUTH2_PROXY_SET_XAUTHREQUEST: "true"
+      OAUTH2_PROXY_STANDARD_LOGGING: "true"
+      OAUTH2_PROXY_AUTH_LOGGING: "true"
+      OAUTH2_PROXY_REQUEST_LOGGING: "true"
+
+    networks: [iam]
+
+
+  # ===== Reverse Proxy HTTPS (Keycloak + OpenEMR) =====
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: ehr-proxy
+    restart: unless-stopped
+    depends_on:
+      - keycloak
+      - openemr
+    ports:
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+    networks:
+      - iam
+
+volumes:
+  pgdata:
+  oe-db:
+  oe-sites:
+
+networks:
+  iam:
+    driver: bridge

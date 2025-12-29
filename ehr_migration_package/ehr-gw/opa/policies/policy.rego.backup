@@ -1,0 +1,456 @@
+package http.authz
+
+import data.helpers
+
+# ============================================
+# DEFAULT VALUES - Mặc định từ chối tất cả
+# ============================================
+default allow = false
+default reason = "ok"
+default obligations = []
+
+# Lấy danh sách roles của user từ request
+roles := input.user.roles
+
+# ============================================
+# ROLE CHECKS - Kiểm tra role của user
+# ============================================
+is_admin_it if { roles[_] == "admin" }                 # Admin - Quản lý hệ thống
+is_admin_hospital if { roles[_] == "admin_hospital" } # Ban Giám đốc - Quản lý bệnh viện
+
+# Bác sĩ - Phân theo khoa (chỉ xem và cập nhật, không tạo mới)
+is_doc if { roles[_] == "doctor" }                     # Bác sĩ - Chung (legacy)
+is_doctor_cardiology if { roles[_] == "doctor_cardiology" }     # Bác sĩ Khoa Tim mạch
+is_doctor_internal if { roles[_] == "doctor_internal" }         # Bác sĩ Khoa Nội
+is_doctor_surgery if { roles[_] == "doctor_surgery" }           # Bác sĩ Khoa Ngoại
+is_doctor_pediatrics if { roles[_] == "doctor_pediatrics" }     # Bác sĩ Khoa Nhi
+is_doctor_obstetrics if { roles[_] == "doctor_obstetrics" }     # Bác sĩ Khoa Sản
+is_doctor_neurology if { roles[_] == "doctor_neurology" }       # Bác sĩ Khoa Thần kinh
+is_doctor_orthopedics if { roles[_] == "doctor_orthopedics" }   # Bác sĩ Khoa Chấn thương chỉnh hình
+
+# Helper: Kiểm tra có phải bác sĩ (bất kỳ khoa nào)
+is_any_doctor if { is_doc }
+is_any_doctor if { is_doctor_cardiology }
+is_any_doctor if { is_doctor_internal }
+is_any_doctor if { is_doctor_surgery }
+is_any_doctor if { is_doctor_pediatrics }
+is_any_doctor if { is_doctor_obstetrics }
+is_any_doctor if { is_doctor_neurology }
+is_any_doctor if { is_doctor_orthopedics }
+
+# Y tá - Phân theo khoa (chỉ xem, không tạo mới/cập nhật/xóa)
+is_nurse if { roles[_] == "nurse" }                    # Y tá - Chung (legacy)
+is_nurse_cardiology if { roles[_] == "nurse_cardiology" }     # Y tá Khoa Tim mạch
+is_nurse_internal if { roles[_] == "nurse_internal" }         # Y tá Khoa Nội
+is_nurse_surgery if { roles[_] == "nurse_surgery" }           # Y tá Khoa Ngoại
+is_nurse_pediatrics if { roles[_] == "nurse_pediatrics" }     # Y tá Khoa Nhi
+is_nurse_obstetrics if { roles[_] == "nurse_obstetrics" }     # Y tá Khoa Sản
+is_nurse_neurology if { roles[_] == "nurse_neurology" }       # Y tá Khoa Thần kinh
+is_nurse_orthopedics if { roles[_] == "nurse_orthopedics" }   # Y tá Khoa Chấn thương chỉnh hình
+is_nurse_emergency if { roles[_] == "nurse_emergency" }       # Y tá Khoa Cấp cứu
+is_nurse_icu if { roles[_] == "nurse_icu" }                   # Y tá Khoa Hồi sức tích cực (ICU)
+
+# Helper: Kiểm tra có phải y tá (bất kỳ khoa nào)
+is_any_nurse if { is_nurse }
+is_any_nurse if { is_nurse_cardiology }
+is_any_nurse if { is_nurse_internal }
+is_any_nurse if { is_nurse_surgery }
+is_any_nurse if { is_nurse_pediatrics }
+is_any_nurse if { is_nurse_obstetrics }
+is_any_nurse if { is_nurse_neurology }
+is_any_nurse if { is_nurse_orthopedics }
+is_any_nurse if { is_nurse_emergency }
+is_any_nurse if { is_nurse_icu }
+
+is_accountant if { roles[_] == "accountant" }         # Kế toán - Quản lý hóa đơn
+is_patient if { roles[_] == "patient" }               # Bệnh nhân - Xem hồ sơ của mình
+
+# ============================================
+# ACCESS CHECKS - Kiểm tra quyền truy cập
+# ============================================
+# Kiểm tra xem user có phải là chủ sở hữu hồ sơ không
+is_own_record if {
+  is_patient
+  input.user.id == input.patient.id
+}
+
+# Kiểm tra xem user có phải là bác sĩ/y tá chăm sóc bệnh nhân không
+is_attending if {
+  input.patient.care_team_ids[_] == input.user.id
+}
+
+# Kiểm tra xem có giấy chuyển viện hợp lệ không
+referral_ok if {
+  input.referral.valid == true
+  input.referral.patient_id == input.patient.id
+}
+
+# ============================================
+# PURPOSE CHECKS - Kiểm tra mục đích truy cập
+# ============================================
+# Danh sách tất cả các mục đích hợp lệ
+allowed_purposes := {"treatment","care","emergency","audit","billing","research","patient_access","system_maintenance"}
+purpose_ok if { allowed_purposes[input.purpose] }
+
+# Doctor chỉ được dùng purpose: treatment, care, emergency
+# (Không được dùng audit, billing, research)
+doctor_purpose_ok if {
+  is_any_doctor
+  doctor_allowed_purposes := {"treatment", "care", "emergency"}
+  doctor_allowed_purposes[input.purpose]
+}
+
+# Nurse chỉ được dùng purpose: treatment, care, emergency
+# (Không được dùng audit, billing, research)
+nurse_purpose_ok if {
+  is_any_nurse
+  nurse_allowed_purposes := {"treatment", "care", "emergency"}
+  nurse_allowed_purposes[input.purpose]
+}
+
+# Accountant chỉ được dùng purpose: billing
+# (Không được dùng treatment, care, emergency)
+accountant_purpose_ok if {
+  is_accountant
+  input.purpose == "billing"
+}
+
+# ============================================
+# RESEARCH & EMERGENCY CHECKS
+# ============================================
+# Research được phép nếu không phải research purpose, hoặc có sự đồng ý của bệnh nhân + phê duyệt từ giám đốc
+research_ok if { input.purpose != "research" }
+research_ok if {
+  input.purpose == "research"
+  input.patient.consent_ok == true
+  input.request.director_approval == true
+}
+
+# ============================================
+# DATA SENSITIVITY CHECKS - Kiểm tra độ nhạy cảm dữ liệu
+# ============================================
+# Dữ liệu nhạy cảm cao: Tâm thần, HIV, Di truyền, Ung thư
+is_highly_sensitive_data if {
+  helpers.is_data_type(input.path, "HIGHLY_SENSITIVE")
+}
+
+# Break the glass: Truy cập khẩn cấp khi có lý do y tế
+is_break_the_glass if {
+  input.purpose == "emergency"
+  input.request.emergency_reason != ""
+}
+
+# ============================================
+# PERMIT RULES (base_allow) - Cho phép truy cập
+# ============================================
+
+# Rule 1: Bệnh nhân xem hồ sơ của mình (clinical paths)
+base_allow if {
+  is_patient
+  is_own_record
+  input.method == "GET"
+  input.purpose == "patient_access"
+}
+
+# Rule 1b: Bệnh nhân xem hồ sơ của mình (patient API)
+# (Được GET /patient/profile)
+base_allow if {
+  is_patient
+  input.path == "/patient/profile"
+  input.method == "GET"
+  input.purpose == "patient_access"
+}
+
+# Rule 1c: Bệnh nhân xem hồ sơ y tế của mình (patient API)
+# (Được GET /patient/medical-records)
+base_allow if {
+  is_patient
+  startswith(input.path, "/patient/medical-records")
+  input.method == "GET"
+  input.purpose == "patient_access"
+}
+
+# Rule 2: Admin CNTT bảo trì hệ thống
+# (Được phép tất cả methods cho system paths)
+# (Chỉ được truy cập system paths, không được truy cập dữ liệu lâm sàng)
+base_allow if {
+  is_admin_it
+  input.purpose == "system_maintenance"
+  helpers.is_system_path(input.path)
+}
+
+# Rule 3: Ban Giám đốc xem hồ sơ để kiểm toán
+# (Chỉ được GET, không được POST/PUT/DELETE)
+base_allow if {
+  is_admin_hospital
+  input.method == "GET"
+  input.purpose == "audit"
+}
+
+# Rule 4: Bác sĩ chăm sóc bệnh nhân (attending physician)
+# (CHỈ được GET và PUT - xem và cập nhật, KHÔNG được POST - tạo mới, KHÔNG được DELETE)
+base_allow if {
+  is_any_doctor
+  is_attending
+  doctor_purpose_ok
+  research_ok
+  input.method == "GET"
+}
+
+base_allow if {
+  is_any_doctor
+  is_attending
+  doctor_purpose_ok
+  research_ok
+  input.method == "PUT"
+}
+
+# Rule 5: Bác sĩ có giấy chuyển viện
+# (CHỈ được GET và PUT - xem và cập nhật, KHÔNG được POST - tạo mới, KHÔNG được DELETE)
+base_allow if {
+  is_any_doctor
+  referral_ok
+  doctor_purpose_ok
+  research_ok
+  input.method == "GET"
+}
+
+base_allow if {
+  is_any_doctor
+  referral_ok
+  doctor_purpose_ok
+  research_ok
+  input.method == "PUT"
+}
+
+# Rule 6: Bác sĩ truy cập khẩn cấp (break the glass)
+# (CHỈ được GET và PUT - xem và cập nhật, KHÔNG được POST - tạo mới, KHÔNG được DELETE)
+base_allow if {
+  is_any_doctor
+  is_break_the_glass
+  doctor_purpose_ok
+  research_ok
+  input.method == "GET"
+}
+
+base_allow if {
+  is_any_doctor
+  is_break_the_glass
+  doctor_purpose_ok
+  research_ok
+  input.method == "PUT"
+}
+
+# Rule 7: Y tá chăm sóc bệnh nhân
+# (Chỉ được GET, không được POST/PUT/DELETE)
+base_allow if {
+  is_any_nurse
+  is_attending
+  nurse_purpose_ok
+  research_ok
+  input.method == "GET"
+}
+
+# Rule 8: Y tá truy cập khẩn cấp
+# (Chỉ được GET, không được POST/PUT/DELETE)
+base_allow if {
+  is_any_nurse
+  is_break_the_glass
+  purpose_ok
+  research_ok
+  input.method == "GET"
+}
+
+# Rule 9: Bác sĩ xem danh sách bệnh nhân qua admin API
+# (Được GET để xem danh sách bệnh nhân)
+base_allow if {
+  is_doc
+  input.path == "/admin/patients"
+  input.method == "GET"
+  doctor_purpose_ok
+}
+
+# Rule 10: Bác sĩ tạo bệnh nhân qua admin API
+# (Được POST để tạo bệnh nhân mới)
+base_allow if {
+  is_doc
+  input.path == "/admin/patients"
+  input.method == "POST"
+  doctor_purpose_ok
+}
+
+# Rule 11: Bác sĩ cập nhật bệnh nhân qua admin API
+# (Được PUT để cập nhật thông tin bệnh nhân)
+base_allow if {
+  is_doc
+  startswith(input.path, "/admin/patients/")
+  input.method == "PUT"
+  doctor_purpose_ok
+}
+
+# Rule 11a: Y tá xem danh sách bệnh nhân qua admin API
+# (Được GET để xem danh sách bệnh nhân, chỉ đọc)
+base_allow if {
+  is_any_nurse
+  input.path == "/admin/patients"
+  input.method == "GET"
+  nurse_purpose_ok
+}
+
+# Rule 11b: Y tá xem chi tiết bệnh nhân qua admin API
+# (Được GET để xem thông tin bệnh nhân, chỉ đọc)
+base_allow if {
+  is_any_nurse
+  startswith(input.path, "/admin/patients/")
+  input.method == "GET"
+  nurse_purpose_ok
+}
+
+# Rule 12: Kế toán xem hóa đơn
+# (Chỉ được GET, không được POST/PUT/DELETE)
+base_allow if {
+  is_accountant
+  accountant_purpose_ok
+  input.method == "GET"
+}
+
+# Rule 13a: Admin quản lý user - GET /admin/users
+base_allow if {
+  is_admin_it
+  input.path == "/admin/users"
+  input.purpose == "system_maintenance"
+}
+
+# Rule 13b: Admin quản lý user - /admin/users/* (tạo, cập nhật, xóa, đổi mật khẩu)
+base_allow if {
+  is_admin_it
+  startswith(input.path, "/admin/users/")
+  input.purpose == "system_maintenance"
+}
+
+# ============================================
+# DENY RULES (deny_reasons) - Từ chối truy cập
+# ============================================
+
+# Deny 1: Mục đích truy cập không hợp lệ
+# (Ví dụ: purpose không nằm trong allowed_purposes)
+reasons[r] if {
+  not purpose_ok
+  r := "purpose_not_allowed"
+}
+
+# Deny 2: Truy cập research mà không có sự đồng ý
+# (Cần sự đồng ý của bệnh nhân + phê duyệt từ giám đốc)
+reasons[r] if {
+  input.purpose == "research"
+  not research_ok
+  r := "research_policy_violation"
+}
+
+# Deny 3: Truy cập dữ liệu nhạy cảm cao
+# (Chỉ cho phép: admin_hospital, chủ sở hữu hồ sơ, bác sĩ chuyên khoa)
+reasons[r] if {
+  is_highly_sensitive_data
+  not is_admin_hospital
+  not is_own_record
+  not helpers.is_specialist_doc(input.user)
+  r := "highly_sensitive_data_access_denied"
+}
+
+# Deny 4: Y tá chỉ được phép đọc (read-only)
+# (Không được POST/PUT/DELETE)
+reasons[r] if {
+  is_nurse
+  input.method != "GET"
+  r := "nurse_read_only"
+}
+
+# Deny 5: Admin CNTT không được truy cập dữ liệu lâm sàng
+# (Chỉ được truy cập system paths để bảo trì)
+reasons[r] if {
+  is_admin_it
+  helpers.is_clinical_path(input.path)
+  not helpers.is_system_path(input.path)
+  r := "it_admin_clinical_access_denied"
+}
+
+# Deny 6: Không được truy vấn hàng loạt (collection GET)
+# (Chỉ cho phép: admin_hospital, admin_it)
+reasons[r] if {
+  helpers.is_collection_get(input.path)
+  not is_admin_hospital
+  not is_admin_it
+  r := "mass_query_not_allowed"
+}
+
+# ============================================
+# FINAL DECISION LOGIC - Quyết định cuối cùng
+# ============================================
+
+# Tập hợp tất cả các lý do từ chối
+deny_reasons := [r | reasons[r]]
+
+# Cho phép nếu: có base_allow rule match AND không có deny reason nào
+allow if {
+  base_allow
+  count(deny_reasons) == 0
+}
+
+# Quyết định: "allow" hoặc "deny"
+decision_str := "allow" if { allow }
+decision_str := "deny" if { not allow }
+
+# Lý do từ chối (nếu có nhiều lý do, nối bằng dấu phẩy)
+reason_str := concat(",", deny_reasons) if { count(deny_reasons) > 0 }
+reason_str := "ok" if { count(deny_reasons) == 0 }
+
+# ============================================
+# AUDIT LOGGING - Ghi log kiểm toán
+# ============================================
+# Tạo header để ghi log quyết định
+audit_log_obj := {"set_headers": {
+  "x-decision":    decision_str,
+  "x-reason":      reason_str,
+  "x-user-id":     input.user.id,
+  "x-user-roles":  concat(",", roles),
+  "x-purpose":     input.purpose,
+  "x-patient-id":  input.patient.id,
+  "x-request-id":  input.request_id,
+}}
+
+# ============================================
+# BREAK THE GLASS ALERT - Cảnh báo truy cập khẩn cấp
+# ============================================
+# Gửi cảnh báo nếu truy cập khẩn cấp được phép
+break_glass_alert := [{"send_alert_to_security": {
+  "type": "BREAK_THE_GLASS_ACCESS",
+  "user_id": input.user.id,
+  "patient_id": input.patient.id,
+  "reason": input.request.emergency_reason,
+}}] if {
+  is_break_the_glass
+  base_allow
+}
+
+# Không gửi cảnh báo nếu không phải truy cập khẩn cấp
+break_glass_alert := [] if {
+  not is_break_the_glass
+}
+
+# Không gửi cảnh báo nếu truy cập khẩn cấp bị từ chối
+break_glass_alert := [] if {
+  is_break_the_glass
+  not base_allow
+}
+
+# Kết hợp audit log và break glass alert
+obligations := array.concat([audit_log_obj], break_glass_alert)
+
+# ============================================
+# FINAL RESPONSE - Phản hồi cuối cùng
+# ============================================
+decision := {
+  "allow": allow,
+  "reason": reason_str,
+  "obligations": obligations,
+}

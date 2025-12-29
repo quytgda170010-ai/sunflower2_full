@@ -1,0 +1,346 @@
+version: "3.9"
+
+services:
+  # ===== STACK A: GATEWAY (PEP/PDP Pattern) =====
+
+  # PostgreSQL for Keycloak
+  postgres:
+    image: postgres:16
+    container_name: pg-keycloak
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${PG_DB:-keycloak}
+      POSTGRES_USER: ${PG_USER:-keycloak}
+      POSTGRES_PASSWORD: ${PG_PASS:-keycloak123}
+      TZ: ${TZ:-UTC}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks: [ ehr-net ]
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${PG_USER:-keycloak}" ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # Keycloak (IAM)
+  keycloak:
+    image: quay.io/keycloak/keycloak:${KC_VERSION:-23.0.0}
+    container_name: keycloak
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    command:
+      - start
+      - --http-port=8080
+      - --hostname-strict=false
+      - --proxy=edge
+      - --db=postgres
+      - --db-url=jdbc:postgresql://postgres:5432/${PG_DB:-keycloak}
+      - --db-username=${PG_USER:-keycloak}
+      - --db-password=${PG_PASS:-keycloak123}
+      - --import-realm
+    environment:
+      KEYCLOAK_ADMIN: ${KC_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KC_ADMIN_PASS:-Admin123!ChangeMe}
+      TZ: ${TZ:-UTC}
+    volumes:
+      - ./linh/keycloak/realm-ClinicRealm.json:/opt/keycloak/data/import/realm-ClinicRealm.json:ro
+    healthcheck:
+      test: [ "CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080 && echo -e 'GET /realms/master HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q 'HTTP/1.1 200'" ]
+      interval: 15s
+      timeout: 10s
+      retries: 30
+    networks: [ ehr-net ]
+
+  # OPA (Policy Decision Point)
+  opa:
+    image: openpolicyagent/opa:latest
+    container_name: opa
+    restart: unless-stopped
+    command:
+      - run
+      - --server
+      - --addr=0.0.0.0:8181
+      - /policies
+    expose:
+      - "8181"
+    volumes:
+      - ./ehr-gw/opa/policies/policy.rego:/policies/policy.rego:ro
+      - ./ehr-gw/opa/policies/helpers.rego:/policies/helpers.rego:ro
+    networks: [ ehr-net ]
+
+  # NGINX Gateway (Policy Enforcement Point)
+  gateway:
+    build:
+      context: ./ehr-gw/gateway
+      dockerfile: Dockerfile
+    container_name: gateway
+    restart: unless-stopped
+    expose:
+      - "80"
+    environment:
+      - OPA_URL=http://opa:8181/v1/data/http/authz/decision
+      - TZ=Asia/Ho_Chi_Minh
+    volumes:
+      - ./ehr-gw/gateway/nginx.conf:/usr/local/openresty/nginx/conf/nginx.conf:ro
+      - ./ehr-gw/gateway/lua/opa_auth.lua:/etc/nginx/lua/opa_auth.lua:ro
+      - ./ehr-gw/gateway/www/index.html:/usr/local/openresty/nginx/html/tester/index.html:ro
+      - ./ehr-gw/gateway/logs:/shared/nginx-logs
+    depends_on:
+      - opa
+      - keycloak
+    networks: [ ehr-net ]
+
+  # ===== STACK B: EMR SYSTEM =====
+
+  # MariaDB
+  mariadb:
+    image: mariadb:10.11
+    container_name: mariadb
+    restart: unless-stopped
+    command: --default-time-zone='+07:00'
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-emrdbpass}
+      MARIADB_DATABASE: ${MARIADB_DATABASE:-ehr_core}
+      MARIADB_USER: ${MARIADB_USER:-openemr}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD:-Openemr!123}
+      TZ: Asia/Ho_Chi_Minh
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - keyring_data:/var/lib/mysql-keyring
+      - ./ehr-on-windows/mariadb/init:/docker-entrypoint-initdb.d:ro
+      - ./ehr-on-windows/mariadb/conf/custom.cnf:/etc/mysql/conf.d/custom.cnf:ro
+    healthcheck:
+      test: [ "CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -p${MARIADB_ROOT_PASSWORD:-emrdbpass}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [ ehr-net ]
+
+  # Watchdog: Auto-recovery general_log (moi 10 giay)
+  mysql-watchdog:
+    build:
+      context: ./watchdog
+      dockerfile: Dockerfile
+    container_name: mysql-watchdog
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    environment:
+      - SMTP_SERVER=smtp.gmail.com
+      - SMTP_PORT=465
+      - SMTP_USER=${SMTP_USER:-tran.giaquy301003@gmail.com}
+      - SMTP_PASS=${SMTP_PASS:-yzee emcd qwvz xwdp}
+      - ALERT_EMAIL=${ALERT_EMAIL:-tran.giaquy301003@gmail.com}
+    networks: [ ehr-net ]
+
+  # Auto Backup: Backup access_logs every hour
+  access-logs-backup:
+    build:
+      context: ./backup-service
+      dockerfile: Dockerfile
+    container_name: access-logs-backup
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    volumes:
+      - ./backups/access_logs:/backups
+    networks: [ ehr-net ]
+
+  # OpenEMR - Commented out due to permission issues
+  # Uncomment and fix if needed
+  # openemr:
+  #   image: openemr/openemr:latest
+  #   container_name: openemr
+  #   restart: unless-stopped
+  #   depends_on:
+  #     mariadb:
+  #       condition: service_healthy
+  #   environment:
+  #     OE_SITE: default
+  #     OE_USER: admin
+  #     OE_PASS: AdminPass!123
+  #     MYSQL_HOST: mariadb
+  #     MYSQL_ROOT_PASS: ${MARIADB_ROOT_PASSWORD:-emrdbpass}
+  #     MYSQL_DATABASE: ${MARIADB_DATABASE:-ehr_core}
+  #     MYSQL_USER: ${MARIADB_USER:-openemr}
+  #     MYSQL_PASS: ${MARIADB_PASSWORD:-Openemr!123}
+  #     TZ: Asia/Ho_Chi_Minh
+  #   expose:
+  #     - "80"
+  #   networks: [ehr-net]
+
+  # EHR Core (FastAPI)
+  ehr-core:
+    build:
+      context: ./ehr-on-windows/ehr-core
+    container_name: ehr-core
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    environment:
+      DB_HOST: mariadb
+      DB_NAME: ${MARIADB_DATABASE:-ehr_core}
+      DB_USER: ${MARIADB_USER:-openemr}
+      DB_PASS: ${MARIADB_PASSWORD:-Openemr!123}
+      EHR_CORE_SECRET: ${EHR_CORE_SECRET:-dGVzdHNlY3JldGtleTMyYnl0ZXNsb25nYWFhYWFhYWE=}
+      EHR_CORE_SECRET_KID: ${EHR_CORE_SECRET_KID:-1}
+      EHR_CORE_ENABLE_REENCRYPT_DEMO: ${EHR_CORE_ENABLE_REENCRYPT_DEMO:-0}
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-ClinicRealm}
+      KEYCLOAK_ADMIN_USER: ${KC_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASS: ${KC_ADMIN_PASS:-123456789}
+      KEYCLOAK_ADMIN_PASSWORD: ${KC_ADMIN_PASS:-123456789}
+      OPA_URL: http://opa:8181
+      TZ: Asia/Ho_Chi_Minh
+    expose:
+      - "8000"
+    volumes:
+      - ./ehr-on-windows/ehr-core/app:/app/app:ro
+    networks: [ ehr-net ]
+
+  # ===== WEB UI =====
+
+  # React Admin Dashboard
+  web-ui:
+    build:
+      context: ../web-ui
+      dockerfile: Dockerfile
+    container_name: web-ui
+    restart: unless-stopped
+    expose:
+      - "3000"
+    environment:
+      REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:3000/gateway}
+      REACT_APP_KEYCLOAK_URL: ${REACT_APP_KEYCLOAK_URL:-http://localhost:8080}
+      REACT_APP_KEYCLOAK_REALM: ${KEYCLOAK_REALM:-ClinicRealm}
+      REACT_APP_KEYCLOAK_CLIENT_ID: ${REACT_APP_KEYCLOAK_CLIENT_ID:-web-ui}
+      TZ: ${TZ:-Asia/Ho_Chi_Minh}
+    depends_on:
+      - ehr-core
+      - keycloak
+      - gateway
+    networks: [ ehr-net ]
+
+  # ===== REVERSE PROXY (HTTPS) =====
+
+  nginx-proxy:
+    image: nginx:1.27-alpine
+    container_name: nginx-proxy
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+      - "443:443"
+    volumes:
+      - ./linh/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./linh/nginx/certs:/etc/nginx/certs:ro
+    depends_on:
+      - web-ui
+      - keycloak
+      - siem-backend
+    networks: [ ehr-net ]
+
+  # ===== PATIENT PORTAL =====
+
+  # Patient Portal Frontend (React)
+  patient-portal:
+    build:
+      context: ./patient-portal
+      dockerfile: Dockerfile
+      args:
+        PUBLIC_URL: /portal
+    container_name: patient-portal
+    restart: unless-stopped
+    expose:
+      - "3001"
+    environment:
+      REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:3000/gateway}
+      REACT_APP_KEYCLOAK_URL: ${REACT_APP_KEYCLOAK_URL:-http://localhost:8080}
+      REACT_APP_KEYCLOAK_REALM: ${KEYCLOAK_REALM:-ClinicRealm}
+      REACT_APP_KEYCLOAK_CLIENT_ID: ${REACT_APP_KEYCLOAK_CLIENT_ID:-patient-portal}
+      TZ: ${TZ:-Asia/Ho_Chi_Minh}
+    networks: [ ehr-net ]
+
+  # ===== STACK C: SIEM & ANALYTICS =====
+
+  # SIEM Backend (FastAPI)
+  siem-backend:
+    build:
+      context: ./Stack_C/backend
+      dockerfile: Dockerfile
+    container_name: siem-backend-v2
+    restart: unless-stopped
+    expose:
+      - "8003"
+    environment:
+      DB_HOST: mariadb
+      DB_NAME: ${MARIADB_DATABASE:-ehr_core}
+      DB_USER: ${MARIADB_USER:-openemr}
+      DB_PASS: ${MARIADB_PASSWORD:-Openemr!123}
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-ClinicRealm}
+      KEYCLOAK_CLIENT_ID: siem-dashboard
+      CORS_ORIGINS: http://localhost:3002,http://siem-frontend:3002
+      TZ: ${TZ:-Asia/Ho_Chi_Minh}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4-turbo-preview}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    volumes:
+      - db_data:/var/lib/mysql:ro
+    networks: [ ehr-net ]
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:8003/health || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # SIEM Frontend (React)
+  siem-frontend:
+    build:
+      context: ./Stack_C/frontend
+      dockerfile: Dockerfile
+      args:
+        PUBLIC_URL: /siem
+    container_name: siem-frontend
+    restart: unless-stopped
+    expose:
+      - "3002"
+    environment:
+      REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:3000}
+      REACT_APP_KEYCLOAK_URL: ${REACT_APP_KEYCLOAK_URL:-http://localhost:8080}
+      REACT_APP_KEYCLOAK_REALM: ${KEYCLOAK_REALM:-ClinicRealm}
+      REACT_APP_KEYCLOAK_CLIENT_ID: ${REACT_APP_KEYCLOAK_CLIENT_ID:-siem-dashboard}
+      TZ: ${TZ:-Asia/Ho_Chi_Minh}
+    depends_on:
+      - siem-backend
+      - keycloak
+    networks: [ ehr-net ]
+    healthcheck:
+      test: [ "CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:3002 || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  pgdata:
+  db_data:
+  keyring_data:
+
+
+networks:
+  ehr-net:
+    driver: bridge

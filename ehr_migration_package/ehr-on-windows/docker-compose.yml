@@ -1,0 +1,102 @@
+services:
+  mariadb:
+    image: mariadb:10.11
+    container_name: mariadb
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+      MARIADB_DATABASE: ${MARIADB_DATABASE}
+      MARIADB_USER: ${MARIADB_USER}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+      TZ: ${TZ}
+    volumes:
+      - db_data:/var/lib/mysql
+      - keyring_data:/var/lib/mysql-keyring
+      - ./mariadb/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -p${MARIADB_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  openemr:
+    image: openemr/openemr:latest
+    container_name: openemr
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    environment:
+      OE_SITE: default
+      OE_USER: admin
+      OE_PASS: AdminPass!123
+      MYSQL_HOST: mariadb
+      MYSQL_ROOT_PASS: ${MARIADB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MARIADB_DATABASE}
+      MYSQL_USER: ${MARIADB_USER}
+      MYSQL_PASS: ${MARIADB_PASSWORD}
+      TZ: ${TZ}
+    expose:
+      - "80"
+
+  ehr-core:
+    build:
+      context: ./ehr-core
+    container_name: ehr-core
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    environment:
+      DB_HOST: mariadb
+      DB_NAME: ${MARIADB_DATABASE}
+      DB_USER: ${MARIADB_USER}
+      DB_PASS: ${MARIADB_PASSWORD}
+      EHR_CORE_SECRET: ${EHR_CORE_SECRET}
+      EHR_CORE_SECRET_KID: ${EHR_CORE_SECRET_KID}
+      EHR_CORE_ENABLE_REENCRYPT_DEMO: ${EHR_CORE_ENABLE_REENCRYPT_DEMO}
+      OPA_URL: http://opa:8181
+      TZ: ${TZ}
+    ports:
+      - "8000:8000"
+    networks:
+      - default
+      - ehr-net
+
+  opa:
+    image: openpolicyagent/opa:latest
+    container_name: opa
+    restart: unless-stopped
+    command:
+      - run
+      - --server
+      - --addr=0.0.0.0:8181
+      - /policies
+    ports:
+      - "8181:8181"
+    volumes:
+      - ./opa/policies:/policies:ro
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    restart: unless-stopped
+    depends_on:
+      - openemr
+      - ehr-core
+      - opa
+    ports:
+      - "80:80"
+      - "8443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+
+volumes:
+  db_data:
+  keyring_data:
+
+networks:
+  ehr-net:
+    name: sunflower2_ehr-net
+    external: true

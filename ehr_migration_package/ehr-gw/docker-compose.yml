@@ -1,0 +1,43 @@
+services:
+  gateway:
+    build:
+      context: gateway
+      dockerfile: Dockerfile
+    container_name: gateway
+    ports:
+      - "8081:80"
+    environment:
+      - OPA_URL=http://opa:8181/v1/data/http/authz/decision
+    volumes:
+      - ./nginx.conf:/usr/local/openresty/nginx/conf/nginx.conf:ro        # nginx.conf ở GỐC
+      - ./gateway/lua/opa_auth.lua:/etc/nginx/lua/opa_auth.lua:ro         # đúng đường dẫn
+      - ./gateway/www/index.html:/usr/local/openresty/nginx/html/tester/index.html:ro
+      - ./gateway/logs:/shared/nginx-logs
+    depends_on:
+      - opa
+    networks:
+      - ehr-net
+    restart: unless-stopped
+
+
+  opa:
+    image: openpolicyagent/opa:latest
+    container_name: opa
+    command:
+      - run
+      - --server
+      - --addr=0.0.0.0:8181
+      - /policies
+    ports:
+      - "8181:8181"
+    volumes:
+      - ./opa/policies/policy.rego:/policies/policy.rego:ro
+      - ./opa/policies/helpers.rego:/policies/helpers.rego:ro
+    networks:
+      - ehr-net
+    restart: unless-stopped
+
+networks:
+  ehr-net:
+    name: sunflower2_ehr-net
+    external: true

@@ -1,0 +1,14 @@
+[mysqld]
+# Binary Log Configuration for Point-in-Time Recovery
+log_bin = mysql-bin
+binlog_format = ROW
+expire_logs_days = 7
+max_binlog_size = 100M
+server_id = 1
+
+# Enable general_log to TABLE
+general_log = 1
+log_output = TABLE
+
+# Timezone
+default_time_zone = '+07:00'

@@ -1,0 +1,62 @@
+version: "3.9"
+
+services:
+  # SIEM Backend (FastAPI)
+  siem-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: siem-backend
+    restart: unless-stopped
+    ports:
+      - "8003:8003"
+    environment:
+      DB_HOST: mariadb
+      DB_NAME: ehr_core
+      DB_USER: openemr
+      DB_PASSWORD: Openemr!123
+      LOG_FILE_PATH: /shared/nginx-logs/access.json
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: ClinicRealm
+      KEYCLOAK_CLIENT_ID: siem-dashboard
+      CORS_ORIGINS: http://localhost:3002,http://siem-frontend:3002
+      EHR_CORE_URL: http://ehr-core:8000
+    volumes:
+      - ../ehr-gw/gateway/logs:/shared/nginx-logs:ro
+    networks:
+      - ehr-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # SIEM Frontend (React)
+  siem-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: siem-frontend
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    environment:
+      REACT_APP_API_URL: http://localhost:8003
+      REACT_APP_KEYCLOAK_URL: http://localhost:8080
+      REACT_APP_KEYCLOAK_REALM: ClinicRealm
+      REACT_APP_KEYCLOAK_CLIENT_ID: siem-dashboard
+    depends_on:
+      - siem-backend
+    networks:
+      - ehr-net
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3002"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  ehr-net:
+    name: sunflower2_ehr-net
+    external: true
+
