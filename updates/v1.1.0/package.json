@@ -1,0 +1,51 @@
+{
+    "version": "1.1.0",
+    "created_at": "2024-12-30T06:14:00",
+    "changelog": "Thêm 5 rules mới về MFA, giám sát phiên, mã hóa, backup và audit log",
+    "rules_count": 201,
+    "policies_count": 0,
+    "rules": [
+        {
+            "rule_code": "R-NEW-01",
+            "rule_name": "Kiểm tra MFA cho admin",
+            "functional_group": "Xác thực",
+            "law_source": "Thông tư 46/2024/TT-NHNN",
+            "allowed_status": "Bắt buộc",
+            "explanation": "Tài khoản admin phải bật xác thực 2 yếu tố"
+        },
+        {
+            "rule_code": "R-NEW-02",
+            "rule_name": "Giám sát phiên đăng nhập",
+            "functional_group": "Bảo mật",
+            "law_source": "Thông tư 46/2024/TT-NHNN",
+            "allowed_status": "Bắt buộc",
+            "explanation": "Phiên đăng nhập phải được giám sát liên tục"
+        },
+        {
+            "rule_code": "R-NEW-03",
+            "rule_name": "Mã hóa dữ liệu nhạy cảm",
+            "functional_group": "Mã hóa",
+            "law_source": "Thông tư 13/2023/TT-BYT",
+            "allowed_status": "Bắt buộc",
+            "explanation": "Dữ liệu y tế nhạy cảm phải được mã hóa AES-256"
+        },
+        {
+            "rule_code": "R-NEW-04",
+            "rule_name": "Backup dữ liệu định kỳ",
+            "functional_group": "Sao lưu",
+            "law_source": "Thông tư 13/2023/TT-BYT",
+            "allowed_status": "Bắt buộc",
+            "explanation": "Sao lưu dữ liệu tối thiểu mỗi ngày một lần"
+        },
+        {
+            "rule_code": "R-NEW-05",
+            "rule_name": "Audit log không được xóa",
+            "functional_group": "Kiểm toán",
+            "law_source": "Thông tư 46/2024/TT-NHNN",
+            "allowed_status": "Bắt buộc",
+            "explanation": "Log kiểm toán phải được lưu trữ tối thiểu 5 năm"
+        }
+    ],
+    "policies": [],
+    "config": {}
+}
