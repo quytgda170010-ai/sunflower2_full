@@ -23,6 +23,7 @@ import {
   Gavel as GavelIcon,
   Warning as WarningIcon,
   Storage as StorageIcon,
+  SystemUpdate as UpdateIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -36,6 +37,7 @@ const menuItems = [
   { text: 'MySQL Query Logs', icon: <StorageIcon />, path: '/mysql-logs' },
   { text: 'Tra cứu Bộ luật', icon: <GavelIcon />, path: '/law-rules' },
   { text: 'User Management', icon: <UsersIcon />, path: '/user-management' },
+  { text: 'Cập Nhật Hệ Thống', icon: <UpdateIcon />, path: '/system-updates' },
   { text: 'Quay về EHR Admin', icon: <ExitIcon />, path: 'http://localhost:3000', external: true },
 ];
 

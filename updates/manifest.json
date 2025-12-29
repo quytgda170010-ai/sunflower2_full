@@ -1,0 +1,18 @@
+{
+    "name": "SIEM Law Rules Update",
+    "description": "Cập nhật quy tắc tuân thủ cho hệ thống SIEM",
+    "latest_version": "1.0.0",
+    "update_server": "https://raw.githubusercontent.com/quytgda170010-ai/sunflower2_full/main/updates",
+    "packages": [
+        {
+            "version": "1.0.0",
+            "release_date": "2024-12-30",
+            "changelog": "Phiên bản đầu tiên - 196 quy tắc tuân thủ theo Thông tư 46 và Thông tư 13",
+            "rules_count": 196,
+            "policies_count": 0,
+            "download_url": "v1.0.0/package.json",
+            "checksum": "",
+            "min_app_version": "1.0.0"
+        }
+    ]
+}

@@ -11,6 +11,7 @@ import UserManagement from './pages/UserManagement';
 import LoginRedirect from './pages/LoginRedirect';
 import LawRuleCatalog from './pages/LawRuleCatalog';
 import MySQLLogs from './pages/MySQLLogs';
+import SystemUpdates from './pages/SystemUpdates';
 
 // Light theme matching port 3000
 const theme = createTheme({
@@ -112,6 +113,7 @@ function App() {
                     <Route path="/law-rules" element={<LawRuleCatalog />} />
                     <Route path="/user-management" element={<UserManagement />} />
                     <Route path="/mysql-logs" element={<MySQLLogs />} />
+                    <Route path="/system-updates" element={<SystemUpdates />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>
                 </Layout>

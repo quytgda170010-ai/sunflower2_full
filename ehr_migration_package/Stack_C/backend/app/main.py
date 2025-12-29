@@ -1089,3 +1089,134 @@ async def collect_keycloak_events():
 async def collect_keycloak_events_get():
     """GET version for easy browser testing"""
     return await collect_keycloak_events()
+
+# ============================================
+# System Update Endpoints (Windows Update Style)
+# ============================================
+
+@app.get("/api/updates/check")
+async def check_for_updates():
+    """
+    Kiểm tra xem có bản cập nhật mới không
+    
+    Returns:
+        - has_update: bool
+        - current_version: string
+        - latest_version: string
+        - changelog: string
+    """
+    try:
+        import mysql.connector
+        from .update_service import get_update_service
+        
+        conn = mysql.connector.connect(
+            host=os.getenv('DB_HOST', 'mariadb'),
+            database=os.getenv('DB_NAME', 'ehr_core'),
+            user='root',
+            password=os.getenv('MARIADB_ROOT_PASSWORD', 'emrdbpass')
+        )
+        
+        service = get_update_service(conn)
+        result = await service.check_for_updates()
+        
+        conn.close()
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error checking for updates: {e}")
+        return {
+            "has_update": False,
+            "error": str(e),
+            "current_version": "1.0.0"
+        }
+
+@app.post("/api/updates/apply")
+async def apply_update():
+    """
+    Tải và áp dụng bản cập nhật mới nhất
+    
+    Returns:
+        - success: bool
+        - message: string
+        - new_version: string (nếu thành công)
+    """
+    try:
+        import mysql.connector
+        from .update_service import get_update_service
+        
+        conn = mysql.connector.connect(
+            host=os.getenv('DB_HOST', 'mariadb'),
+            database=os.getenv('DB_NAME', 'ehr_core'),
+            user='root',
+            password=os.getenv('MARIADB_ROOT_PASSWORD', 'emrdbpass')
+        )
+        
+        service = get_update_service(conn)
+        result = await service.apply_update()
+        
+        conn.close()
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error applying update: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Cập nhật thất bại: {str(e)}")
+
+@app.get("/api/updates/current")
+async def get_current_version():
+    """Lấy thông tin version hiện tại"""
+    try:
+        from .update_service import get_update_service
+        
+        service = get_update_service()
+        version_info = service.get_current_version()
+        
+        # Also get rules count from database
+        import mysql.connector
+        conn = mysql.connector.connect(
+            host=os.getenv('DB_HOST', 'mariadb'),
+            database=os.getenv('DB_NAME', 'ehr_core'),
+            user='root',
+            password=os.getenv('MARIADB_ROOT_PASSWORD', 'emrdbpass')
+        )
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT COUNT(*) as count FROM siem_law_rules")
+        result = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        
+        version_info['rules_count'] = result['count'] if result else 0
+        
+        return version_info
+        
+    except Exception as e:
+        logger.error(f"Error getting current version: {e}")
+        return {
+            "version": "1.0.0",
+            "rules_count": 0,
+            "error": str(e)
+        }
+
+@app.get("/api/updates/history")
+async def get_update_history():
+    """Lấy lịch sử các bản cập nhật đã áp dụng"""
+    try:
+        from .update_service import get_update_service
+        
+        service = get_update_service()
+        history = await service.get_update_history()
+        
+        return {
+            "history": history,
+            "total": len(history)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting update history: {e}")
+        return {
+            "history": [],
+            "total": 0,
+            "error": str(e)
+        }
+
