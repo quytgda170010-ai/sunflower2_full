@@ -775,7 +775,8 @@ export default function LogDetailsDialog({
 
 
     // --- WAF COMPLIANCE EVENT VIEW (Policy Compliance Monitoring) ---
-    if (isWAF && !isBruteForce) {
+    // BYPASSED: Using unified template instead
+    if (false && isWAF && !isBruteForce) {
         const wafDetails = parseJsonSafe(selectedLog.details) || {};
         const logSnapshotDetails = wafDetails.log_snapshot?.details || wafDetails;
 
@@ -1045,7 +1046,8 @@ export default function LogDetailsDialog({
     }
 
     // --- SUCCESSFUL AUTHENTICATION (COMPLIANCE) VIEW - SYS-AUTH-01 ---
-    if (isAuthCompliance && !isBruteForce) {
+    // BYPASSED: Using unified template instead
+    if (false && isAuthCompliance && !isBruteForce) {
         const authDetails = parseJsonSafe(selectedLog.details) || {};
         const successUser = selectedLog.user || selectedLog.actor_name || authDetails.username || 'Unknown';
         const sourceIP = selectedLog.source_ip || authDetails.ip_address || 'N/A';
@@ -1246,7 +1248,8 @@ export default function LogDetailsDialog({
     }
 
     // --- BRUTE FORCE / AUTHENTICATION FAILURE VIEW ---
-    if (isBruteForce) {
+    // BYPASSED: Using unified template instead
+    if (false && isBruteForce) {
         const authDetails = parseJsonSafe(selectedLog.details) || {};
         const status = parseInt(selectedLog.status) || 0;
         const isLocked = status === 423 || authDetails.account_locked;
@@ -1470,7 +1473,8 @@ export default function LogDetailsDialog({
     }
 
     // --- SIEM LOG TAMPERING VIEW (R-AUD-01 / SIEM_WATCHDOG) - NEW DESIGN ---
-    if (isSIEMLogTampering) {
+    // BYPASSED: Using unified template instead
+    if (false && isSIEMLogTampering) {
         const siemDetails = parseJsonSafe(selectedLog.details) || {};
         const tamperedAt = formatTimestamp(selectedLog.timestamp);
         const alertMessage = selectedLog.action || siemDetails.message || 'Phát hiện xóa dấu vết (Log Tampering)';
@@ -1673,7 +1677,8 @@ export default function LogDetailsDialog({
     }
 
     // --- SECURITY ALERT VIEW (Image 2 Style) ---
-    if ((isViolation || isSQLi) && !isBruteForce) {
+    // BYPASSED: Using unified template instead
+    if (false && (isViolation || isSQLi) && !isBruteForce) {
         return (
             <Dialog open={open} onClose={onClose} maxWidth="xl" fullWidth PaperProps={{ sx: { minHeight: '85vh', p: 0 } }}>
                 <Box sx={{ p: 0 }}>
@@ -2274,6 +2279,21 @@ export default function LogDetailsDialog({
                     bgColor: '#e8f5e9'
                 };
             }
+        }
+
+        // PRIORITY 2: Detect violations from behavior monitoring flags
+        if (isViolation || isSQLi || isBruteForce || isSIEMLogTampering) {
+            const ruleCode = selectedLog.rule_code || 'SECURITY';
+            if (isSQLi) {
+                return { title: 'TẤN CÔNG SQL INJECTION', icon: '🛡️', color: '#b71c1c', bgColor: '#ffebee' };
+            }
+            if (isBruteForce) {
+                return { title: 'TẤN CÔNG BRUTE FORCE', icon: '🔐', color: '#d84315', bgColor: '#fbe9e7' };
+            }
+            if (isSIEMLogTampering) {
+                return { title: 'XÓA DẤU VẾT HỆ THỐNG', icon: '🚨', color: '#b71c1c', bgColor: '#ffebee' };
+            }
+            return { title: `VI PHẠM: ${ruleCode}`, icon: '⚠️', color: '#d32f2f', bgColor: '#ffebee' };
         }
 
         // Login logs
