@@ -2288,8 +2288,14 @@ export default function LogDetailsDialog({
             }
         }
 
-        // PRIORITY 2: Detect violations from behavior monitoring flags
-        if (isViolation || isSQLi || isBruteForce || isSIEMLogTampering) {
+        // PRIORITY 2: Check if log is explicitly COMPLIANT (should override other checks)
+        const isExplicitlyCompliant = selectedLog.compliance_status === 'compliant' ||
+            selectedLog.severity === 'compliant' ||
+            selectedLog.has_violation === false;
+
+        // PRIORITY 3: Detect violations from behavior monitoring flags
+        // Only show as violation if NOT explicitly compliant
+        if (!isExplicitlyCompliant && (isViolation || isSQLi || isBruteForce || isSIEMLogTampering)) {
             const ruleCode = selectedLog.rule_code || 'SECURITY';
             if (isSQLi) {
                 return { title: 'TẤN CÔNG SQL INJECTION', icon: '🛡️', color: '#b71c1c', bgColor: '#ffebee' };
@@ -2301,6 +2307,11 @@ export default function LogDetailsDialog({
                 return { title: 'XÓA DẤU VẾT HỆ THỐNG', icon: '🚨', color: '#b71c1c', bgColor: '#ffebee' };
             }
             return { title: `VI PHẠM: ${ruleCode}`, icon: '⚠️', color: '#d32f2f', bgColor: '#ffebee' };
+        }
+
+        // PRIORITY 4: Show COMPLIANT for logs with rule_code that passed
+        if (isExplicitlyCompliant && selectedLog.rule_code) {
+            return { title: `TUÂN THỦ: ${selectedLog.rule_code}`, icon: '✅', color: '#2e7d32', bgColor: '#e8f5e9' };
         }
 
         // Login logs
