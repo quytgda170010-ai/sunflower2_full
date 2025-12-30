@@ -470,27 +470,7 @@ class SecurityMonitor:
             else:
                 return f'Quản lý lịch hẹn{patient_suffix}'
         
-        elif '/patients' in uri_lower or 'patient' in uri_lower:
-            if operation == 'view':
-                return f'Xem thông tin bệnh nhân{patient_suffix}'
-            elif operation == 'create':
-                return f'Tạo người dùng{patient_suffix}' if 'user' in uri_lower else f'Thêm bệnh nhân mới{patient_suffix}'
-            elif operation == 'update':
-                return f'Cập nhật thông tin bệnh nhân{patient_suffix}'
-            else:
-                return f'Quản lý bệnh nhân{patient_suffix}'
-        
-        elif '/encounters' in uri_lower or 'encounter' in uri_lower or 'visit' in uri_lower:
-            if operation == 'view':
-                return f'Xem nội dung khám bệnh{patient_suffix}'
-            elif operation == 'create':
-                return f'Tạo phiếu khám{patient_suffix}'
-            elif operation == 'update':
-                return f'Cập nhật phiếu khám{patient_suffix}'
-            else:
-                return f'Quản lý phiếu khám{patient_suffix}'
-        
-        # Handle /medical-records POST (prescription creation from gateway)
+        # Handle /medical-records POST (prescription creation from gateway) - BEFORE /patients check!
         elif '/medical-records' in uri_lower:
             method = log.get('method', '').upper()
             # Try to get patient info from request_body if not already available
@@ -517,6 +497,26 @@ class SecurityMonitor:
                 return f'Cập nhật đơn thuốc{patient_suffix}'
             else:
                 return f'Quản lý đơn thuốc{patient_suffix}'
+        
+        elif '/patients' in uri_lower:
+            if operation == 'view':
+                return f'Xem thông tin bệnh nhân{patient_suffix}'
+            elif operation == 'create':
+                return f'Tạo người dùng{patient_suffix}' if 'user' in uri_lower else f'Thêm bệnh nhân mới{patient_suffix}'
+            elif operation == 'update':
+                return f'Cập nhật thông tin bệnh nhân{patient_suffix}'
+            else:
+                return f'Quản lý bệnh nhân{patient_suffix}'
+        
+        elif '/encounters' in uri_lower or 'encounter' in uri_lower or 'visit' in uri_lower:
+            if operation == 'view':
+                return f'Xem nội dung khám bệnh{patient_suffix}'
+            elif operation == 'create':
+                return f'Tạo phiếu khám{patient_suffix}'
+            elif operation == 'update':
+                return f'Cập nhật phiếu khám{patient_suffix}'
+            else:
+                return f'Quản lý phiếu khám{patient_suffix}'
         
         elif '/prescriptions' in uri_lower or 'prescription' in uri_lower or 'medication' in uri_lower:
             if operation == 'view':
