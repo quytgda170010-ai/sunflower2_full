@@ -359,6 +359,7 @@ class BehaviorMonitor:
         OPTIMIZED FULL COMPLIANCE CHECK: Check rules with Rule Grouping.
         - USER logs → only USER scope rules (EMR, session, prescription)
         - SYSTEM logs → only SYSTEM scope rules (TLS, backup, auth, infra)
+        - REFERENCE rules (policy/governance) → skip (can't auto-check from logs)
         """
         rule_code = (rule.get('rule_code') or '').upper().strip()
         rule_scope = (rule.get('rule_scope') or '').upper().strip()
@@ -366,6 +367,23 @@ class BehaviorMonitor:
         # Only skip if rule has no rule_code
         if not rule_code:
             return False
+        
+        # ===== SKIP REFERENCE RULES (POLICY/GOVERNANCE) =====
+        # These rules can't be verified from logs - they require manual attestation or config checks
+        # Display in "Tra cứu Bộ luật" for reference only, don't check in behavior monitoring
+        reference_rule_prefixes = [
+            'R-GOV-',   # Governance rules (thành lập ban ATTT, đào tạo, chính sách...)
+            'R-BKP-',   # Backup policy rules (3-2-1, retention, offsite...)
+            'R-IR-',    # Incident Response rules (playbook, 72h notification...)
+            'R-RBAC-',  # RBAC policy rules (role assignment, break-glass...)
+            'R-SIG-',   # Signature/Certificate rules (chữ ký số, watermark...)
+            'R-INT-',   # Integration rules (HL7, FHIR, master data...)
+        ]
+        
+        for prefix in reference_rule_prefixes:
+            if rule_code.startswith(prefix):
+                logger.debug(f"[REFERENCE] Skip policy rule {rule_code} (can't auto-check from logs)")
+                return False
         
         # Skip noise logs (token refresh, health checks)
         uri = (log.get('uri') or '').lower()
@@ -385,7 +403,7 @@ class BehaviorMonitor:
         
         # Determine if this is a USER rule or SYSTEM rule
         user_rule_prefixes = ['EMR-', 'RX-', 'QUEUE-', 'LOGIN-', 'R-DAM-', 'R-AUD-', 'R-CON-']
-        system_rule_prefixes = ['SYS-', 'R-SEC-', 'R-IAM-', 'R-INT-', 'R-SIG-']
+        system_rule_prefixes = ['SYS-', 'R-SEC-', 'R-IAM-']
         
         is_user_rule = rule_scope == 'USER' or any(rule_code.startswith(p) for p in user_rule_prefixes)
         is_system_rule = rule_scope == 'SYSTEM' or any(rule_code.startswith(p) for p in system_rule_prefixes)
