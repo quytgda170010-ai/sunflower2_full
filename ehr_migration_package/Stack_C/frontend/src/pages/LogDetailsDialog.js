@@ -547,8 +547,14 @@ export default function LogDetailsDialog({
         const ruleCode = selectedLog.rule_code || 'N/A';
         const ruleName = selectedLog.rule_name || 'N/A';
         const logDetails = parseJsonSafe(selectedLog.details) || {};
-        const user = selectedLog.user || selectedLog.actor_name || logDetails.username || 'Unknown';
-        const sourceIP = selectedLog.source_ip || logDetails.ip_address || 'N/A';
+        const user = selectedLog.user || selectedLog.actor_name || logDetails.username || selectedLog.username || 'Unknown';
+        // Try multiple fields for IP
+        const sourceIP = selectedLog.source_ip || selectedLog.ip_address || selectedLog.client_ip ||
+            logDetails.ip_address || logDetails.source_ip || logDetails.client_ip || 'N/A';
+        // Try multiple fields for action
+        const actionText = selectedLog.action || selectedLog.action_description ||
+            logDetails.action || logDetails.action_description ||
+            selectedLog.operation || 'N/A';
 
         // Colors based on violation status
         const theme = isViolationView
@@ -657,7 +663,7 @@ export default function LogDetailsDialog({
                                 </TableRow>
                                 <TableRow>
                                     <TableCell sx={{ fontWeight: 600, bgcolor: '#f5f5f5' }}>Hành động</TableCell>
-                                    <TableCell>{selectedLog.action || 'N/A'}</TableCell>
+                                    <TableCell>{actionText}</TableCell>
                                 </TableRow>
                                 <TableRow>
                                     <TableCell sx={{ fontWeight: 600, bgcolor: '#f5f5f5' }}>Thời gian</TableCell>
@@ -2393,7 +2399,7 @@ export default function LogDetailsDialog({
                                     <TableRow>
                                         <TableCell sx={{ fontWeight: 600, bgcolor: '#f5f5f5' }}>Hành động</TableCell>
                                         <TableCell>
-                                            <Typography variant="body2" fontWeight="bold">{selectedLog.action || 'N/A'}</Typography>
+                                            <Typography variant="body2" fontWeight="bold">{selectedLog.action || selectedLog.action_description || (parseJsonSafe(selectedLog.details) || {}).action || selectedLog.operation || 'N/A'}</Typography>
                                         </TableCell>
                                     </TableRow>
                                     <TableRow>
@@ -2413,6 +2419,14 @@ export default function LogDetailsDialog({
                                     <TableRow>
                                         <TableCell sx={{ fontWeight: 600, bgcolor: '#f5f5f5' }}>Mục đích</TableCell>
                                         <TableCell>{selectedLog.purpose || 'N/A'}</TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell sx={{ fontWeight: 600, bgcolor: '#f5f5f5' }}>Nguồn IP</TableCell>
+                                        <TableCell sx={{ fontFamily: 'monospace' }}>
+                                            {selectedLog.source_ip || selectedLog.ip_address || selectedLog.client_ip ||
+                                                (parseJsonSafe(selectedLog.details) || {}).ip_address ||
+                                                (parseJsonSafe(selectedLog.details) || {}).source_ip || 'N/A'}
+                                        </TableCell>
                                     </TableRow>
                                     {(selectedLog.patient_name || selectedLog.patient_id) && (
                                         <TableRow>
