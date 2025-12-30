@@ -537,6 +537,241 @@ export default function LogDetailsDialog({
         return null;
     };
 
+    // ============================================
+    // UNIFIED SINGLE RULE VIEW TEMPLATE
+    // ============================================
+    // This template is used when clicking "Chi tiết" button on individual rules
+    // Uses the clean layout (image 2 style) with colors based on violation status
+    if (selectedLog._single_rule_view) {
+        const isViolationView = selectedLog.has_violation;
+        const ruleCode = selectedLog.rule_code || 'N/A';
+        const ruleName = selectedLog.rule_name || 'N/A';
+        const logDetails = parseJsonSafe(selectedLog.details) || {};
+        const user = selectedLog.user || selectedLog.actor_name || logDetails.username || 'Unknown';
+        const sourceIP = selectedLog.source_ip || logDetails.ip_address || 'N/A';
+
+        // Colors based on violation status
+        const theme = isViolationView
+            ? {
+                primary: '#d32f2f',
+                light: '#ffebee',
+                border: '#ffcdd2',
+                icon: '🚨',
+                title: 'VI PHẠM QUY TẮC',
+                statusLabel: '❌ VI PHẠM',
+                summaryTitle: 'PHÁT HIỆN VI PHẠM',
+                summaryText: `Hoạt động của ${user} đã vi phạm quy tắc bảo mật. Cần xem xét và xử lý theo quy định.`
+            }
+            : {
+                primary: '#2e7d32',
+                light: '#e8f5e9',
+                border: '#c8e6c9',
+                icon: '✅',
+                title: 'TUÂN THỦ QUY TẮC',
+                statusLabel: '✅ TUÂN THỦ',
+                summaryTitle: 'HOẠT ĐỘNG HỢP LỆ',
+                summaryText: `Hoạt động của ${user} tuân thủ đầy đủ quy định bảo mật và pháp luật.`
+            };
+
+        return (
+            <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth PaperProps={{ sx: { minHeight: '50vh', p: 0 } }}>
+                {/* Header - Dynamic color based on violation status */}
+                <Box sx={{ p: 2.5, background: `linear-gradient(135deg, ${theme.primary} 0%, ${theme.primary}dd 100%)`, color: 'white' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <Box>
+                            <Typography variant="h6" sx={{ fontWeight: 600, letterSpacing: 0.5 }}>
+                                {theme.icon} {theme.title}
+                            </Typography>
+                            <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
+                                Sự kiện #{selectedLog.id?.substring(0, 8)}... • {formatTimestamp(selectedLog.timestamp)}
+                            </Typography>
+                        </Box>
+                        <Box sx={{ textAlign: 'right' }}>
+                            <Chip
+                                label={theme.statusLabel}
+                                sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white', fontWeight: 'bold', fontSize: '0.85rem' }}
+                            />
+                            <Typography variant="caption" sx={{ display: 'block', mt: 0.5, opacity: 0.9 }}>
+                                {ruleCode}
+                            </Typography>
+                        </Box>
+                    </Box>
+                </Box>
+
+                <Box sx={{ p: 3 }}>
+                    {/* Section 1: Summary */}
+                    <Card sx={{ mb: 2, border: `1px solid ${theme.border}`, bgcolor: theme.light }}>
+                        <CardContent sx={{ py: 2 }}>
+                            <Grid container spacing={2} alignItems="center">
+                                <Grid item xs={12} md={8}>
+                                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: theme.primary }}>
+                                        {theme.summaryTitle}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        {theme.summaryText}
+                                    </Typography>
+                                </Grid>
+                                <Grid item xs={12} md={4}>
+                                    <Box sx={{ textAlign: 'center', p: 1, bgcolor: 'white', borderRadius: 1, border: `1px solid ${theme.border}` }}>
+                                        <Chip label={isViolationView ? "⚠️ XỬ LÝ" : "✓ ĐẠT"} color={isViolationView ? "error" : "success"} sx={{ fontWeight: 'bold' }} />
+                                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                                            {selectedLog.severity || 'medium'}
+                                        </Typography>
+                                    </Box>
+                                </Grid>
+                            </Grid>
+                        </CardContent>
+                    </Card>
+
+                    {/* Section 2: Details Table */}
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: '#424242' }}>
+                        📋 CHI TIẾT SỰ KIỆN
+                    </Typography>
+                    <TableContainer component={Paper} variant="outlined" sx={{ mb: 2 }}>
+                        <Table size="small">
+                            <TableBody>
+                                <TableRow>
+                                    <TableCell sx={{ fontWeight: 600, width: '35%', bgcolor: '#f5f5f5' }}>Quy tắc áp dụng</TableCell>
+                                    <TableCell>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <Chip label={ruleCode} size="small" color={isViolationView ? "error" : "success"} />
+                                            <Typography variant="body2">{ruleName}</Typography>
+                                        </Box>
+                                    </TableCell>
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell sx={{ fontWeight: 600, bgcolor: '#f5f5f5' }}>Người dùng</TableCell>
+                                    <TableCell>
+                                        <Chip label={user} size="small" color="primary" variant="outlined" />
+                                    </TableCell>
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell sx={{ fontWeight: 600, bgcolor: '#f5f5f5' }}>Trạng thái</TableCell>
+                                    <TableCell>
+                                        <Chip
+                                            label={isViolationView ? "❌ Vi phạm quy tắc" : "✅ Tuân thủ quy tắc"}
+                                            size="small"
+                                            color={isViolationView ? "error" : "success"}
+                                        />
+                                    </TableCell>
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell sx={{ fontWeight: 600, bgcolor: '#f5f5f5' }}>Hành động</TableCell>
+                                    <TableCell>{selectedLog.action || 'N/A'}</TableCell>
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell sx={{ fontWeight: 600, bgcolor: '#f5f5f5' }}>Thời gian</TableCell>
+                                    <TableCell sx={{ fontFamily: 'monospace' }}>{formatTimestamp(selectedLog.timestamp)}</TableCell>
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell sx={{ fontWeight: 600, bgcolor: '#f5f5f5' }}>Nguồn IP</TableCell>
+                                    <TableCell sx={{ fontFamily: 'monospace' }}>{sourceIP}</TableCell>
+                                </TableRow>
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+
+                    {/* Section 3: Compliance Status */}
+                    {showComplianceSection && (
+                        <>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: '#424242' }}>
+                                ⚖️ TRẠNG THÁI TUÂN THỦ PHÁP LÝ
+                            </Typography>
+                            <Card sx={{ mb: 2, border: `1px solid ${theme.border}`, bgcolor: theme.light }}>
+                                <CardContent sx={{ py: 2 }}>
+                                    <Grid container spacing={2}>
+                                        <Grid item xs={12} md={6}>
+                                            <Typography variant="body2" sx={{ fontWeight: 600, color: theme.primary, mb: 0.5 }}>
+                                                Căn cứ pháp lý Việt Nam
+                                            </Typography>
+                                            <Typography variant="body2" sx={{ mb: 0.5 }}>
+                                                <a href="https://thuvienphapluat.vn/van-ban/Cong-nghe-thong-tin/Luat-an-ninh-mang-2018-351416.aspx" target="_blank" rel="noopener noreferrer" style={{ color: '#1976d2' }}>
+                                                    Luật An ninh mạng 2018 - Điều 26
+                                                </a>
+                                            </Typography>
+                                            <Typography variant="body2" sx={{ mb: 0.5 }}>
+                                                <a href="https://thuvienphapluat.vn/van-ban/Cong-nghe-thong-tin/Luat-an-toan-thong-tin-mang-2015-298365.aspx" target="_blank" rel="noopener noreferrer" style={{ color: '#1976d2' }}>
+                                                    Luật ATTT mạng 2015 - Điều 7
+                                                </a>
+                                            </Typography>
+                                            <Typography variant="body2" sx={{ mt: 1, color: theme.primary, fontWeight: 600 }}>
+                                                {isViolationView ? 'CẦN XỬ LÝ VI PHẠM' : 'TUÂN THỦ ĐẦY ĐỦ'}
+                                            </Typography>
+                                        </Grid>
+                                        <Grid item xs={12} md={6}>
+                                            <Typography variant="body2" sx={{ fontWeight: 600, color: '#1565c0', mb: 0.5 }}>
+                                                Tiêu chuẩn quốc tế
+                                            </Typography>
+                                            <Typography variant="body2">
+                                                ISO/IEC 27001:2022
+                                            </Typography>
+                                            <Typography variant="caption" color="text.secondary">
+                                                Information Security Management
+                                            </Typography>
+                                            <Typography variant="body2" sx={{ mt: 0.5 }}>
+                                                NIST 800-53
+                                            </Typography>
+                                        </Grid>
+                                    </Grid>
+                                </CardContent>
+                            </Card>
+
+                            {/* Recommendations */}
+                            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: '#424242' }}>
+                                {isViolationView ? 'KHUYẾN NGHỊ XỬ LÝ' : 'KHUYẾN NGHỊ TUÂN THỦ'}
+                            </Typography>
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                                {isViolationView ? (
+                                    <>
+                                        <Chip label="Xem xét sự cố" size="small" variant="outlined" color="error" />
+                                        <Chip label="Kiểm tra lịch sử" size="small" variant="outlined" color="warning" />
+                                        <Chip label="Lập biên bản" size="small" variant="outlined" color="error" />
+                                        <Chip label="Thông báo quản lý" size="small" variant="outlined" color="warning" />
+                                    </>
+                                ) : (
+                                    <>
+                                        <Chip label="Ghi log SIEM" size="small" variant="outlined" color="success" />
+                                        <Chip label="Tuân thủ Luật ANM 2018" size="small" variant="outlined" color="success" />
+                                        <Chip label="ISO 27001" size="small" variant="outlined" color="primary" />
+                                    </>
+                                )}
+                            </Box>
+                        </>
+                    )}
+
+                    {/* Section 4: Raw Data */}
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: '#424242' }}>
+                        📄 DỮ LIỆU RAW
+                    </Typography>
+                    <Card variant="outlined" sx={{ mb: 2, bgcolor: '#fafafa' }}>
+                        <CardContent sx={{ py: 1.5 }}>
+                            <Box sx={{ fontFamily: 'monospace', fontSize: '0.75rem', whiteSpace: 'pre-wrap', wordBreak: 'break-all', maxHeight: 150, overflow: 'auto' }}>
+                                {JSON.stringify({
+                                    id: selectedLog.id,
+                                    timestamp: selectedLog.timestamp,
+                                    user: user,
+                                    role: selectedLog.role,
+                                    action: selectedLog.action,
+                                    status: selectedLog.status,
+                                    rule_code: ruleCode,
+                                    rule_name: ruleName,
+                                    has_violation: isViolationView,
+                                    severity: selectedLog.severity
+                                }, null, 2)}
+                            </Box>
+                        </CardContent>
+                    </Card>
+                </Box>
+
+                {/* Footer */}
+                <DialogActions sx={{ p: 2, borderTop: '1px solid #e0e0e0' }}>
+                    <Button onClick={onClose} variant="contained" color={isViolationView ? "error" : "success"}>
+                        Đóng
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        );
+    }
 
 
     // --- WAF COMPLIANCE EVENT VIEW (Policy Compliance Monitoring) ---
