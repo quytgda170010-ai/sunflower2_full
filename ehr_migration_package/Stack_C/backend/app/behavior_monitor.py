@@ -356,7 +356,59 @@ class BehaviorMonitor:
 
     def _rule_applies(self, rule: Dict[str, Any], log: Dict[str, Any]) -> bool:
         """
-        Determine if a rule applies to a given log based on functional_group/log_type/rule_code.
+        OPTIMIZED FULL COMPLIANCE CHECK: Check rules with Rule Grouping.
+        - USER logs → only USER scope rules (EMR, session, prescription)
+        - SYSTEM logs → only SYSTEM scope rules (TLS, backup, auth, infra)
+        """
+        rule_code = (rule.get('rule_code') or '').upper().strip()
+        rule_scope = (rule.get('rule_scope') or '').upper().strip()
+        
+        # Only skip if rule has no rule_code
+        if not rule_code:
+            return False
+        
+        # Skip noise logs (token refresh, health checks)
+        uri = (log.get('uri') or '').lower()
+        if 'openid-connect/token' in uri or '/health' in uri or '/metrics' in uri:
+            return False
+        
+        # ===== RULE GROUPING OPTIMIZATION =====
+        log_type = (log.get('log_type') or '').lower()
+        purpose = (log.get('purpose') or '').lower()
+        
+        # Determine if this is a USER log or SYSTEM log
+        user_log_types = ['emr_access_log', 'encounter_log', 'prescription_log', 'session_log', 'admin_activity_log']
+        system_log_types = ['system_auth_log', 'system_tls_log', 'backup_encryption_log', 'system_compliance_log', 'security_alert']
+        
+        is_user_log = log_type in user_log_types or purpose in ['', 'clinical', 'administrative']
+        is_system_log = log_type in system_log_types or purpose in ['system_compliance', 'authentication', 'backup_encryption']
+        
+        # Determine if this is a USER rule or SYSTEM rule
+        user_rule_prefixes = ['EMR-', 'RX-', 'QUEUE-', 'LOGIN-', 'R-DAM-', 'R-AUD-', 'R-CON-']
+        system_rule_prefixes = ['SYS-', 'R-SEC-', 'R-IAM-', 'R-INT-', 'R-SIG-']
+        
+        is_user_rule = rule_scope == 'USER' or any(rule_code.startswith(p) for p in user_rule_prefixes)
+        is_system_rule = rule_scope == 'SYSTEM' or any(rule_code.startswith(p) for p in system_rule_prefixes)
+        
+        # GROUPING: Only apply matching scope
+        if is_user_log and is_system_rule:
+            # Skip system rules for user logs
+            logger.debug(f"[GROUPING] Skip SYSTEM rule {rule_code} for USER log {log.get('id')}")
+            return False
+        
+        if is_system_log and is_user_rule:
+            # Skip user rules for system logs
+            logger.debug(f"[GROUPING] Skip USER rule {rule_code} for SYSTEM log {log.get('id')}")
+            return False
+        
+        # Apply rule
+        logger.debug(f"[FULL_CHECK] Checking rule {rule_code} (scope={rule_scope}) against log {log.get('id')} (type={log_type})")
+        return True
+    
+    def _rule_applies_strict(self, rule: Dict[str, Any], log: Dict[str, Any]) -> bool:
+        """
+        STRICT MODE (OLD): Original complex filtering logic.
+        Kept for reference but not used in production.
         """
         rule_code = (rule.get('rule_code') or '').upper().strip()
         functional_group = (rule.get('functional_group') or '').lower().strip()

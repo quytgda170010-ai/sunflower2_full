@@ -59,9 +59,51 @@ scheduler.add_job(
     replace_existing=True
 )
 
+# ===== BEHAVIOR MONITORING BACKGROUND JOB =====
+_behavior_cache = {
+    'data': None,
+    'timestamp': None,
+    'processing': False
+}
+
+def update_behavior_cache_job():
+    """Background job to update behavior monitoring cache"""
+    global _behavior_cache
+    if _behavior_cache['processing']:
+        return  # Skip if already processing
+    
+    try:
+        _behavior_cache['processing'] = True
+        from datetime import datetime
+        
+        monitor = BehaviorMonitor()
+        result = monitor.get_behavior_violations(
+            page=1,
+            page_size=100,
+            since_hours=48,
+            since_seconds=300
+        )
+        
+        _behavior_cache['data'] = result
+        _behavior_cache['timestamp'] = datetime.now()
+        logger.info(f"Behavior cache updated: {result.get('total', 0)} records")
+    except Exception as e:
+        logger.error(f"Behavior cache update error: {e}")
+    finally:
+        _behavior_cache['processing'] = False
+
+# Schedule behavior monitoring cache update every 60 seconds
+scheduler.add_job(
+    func=update_behavior_cache_job,
+    trigger=IntervalTrigger(seconds=60),
+    id='behavior_cache',
+    name='Update Behavior Cache',
+    replace_existing=True
+)
+
 # Start scheduler
 scheduler.start()
-logger.info("APScheduler started - Keycloak (60s), TLS (300s) collectors running")
+logger.info("APScheduler started - Keycloak (60s), TLS (300s), Behavior Cache (60s) collectors running")
 
 # Shut down the scheduler when exiting the app
 atexit.register(lambda: scheduler.shutdown())
@@ -347,10 +389,23 @@ async def get_behavior_monitoring(
     since_seconds: Optional[int] = Query(300, ge=30, le=86400),
     compliance_type: Optional[str] = Query(None),  # 'user' or 'system'
     from_date: Optional[str] = Query(None),  # YYYY-MM-DD
-    to_date: Optional[str] = Query(None)     # YYYY-MM-DD
+    to_date: Optional[str] = Query(None),     # YYYY-MM-DD
+    use_cache: bool = Query(True)  # Use cached data for faster response
 ):
     """Compare user actions with compliance rules to detect violations."""
     try:
+        # Use cache for default requests (no filters)
+        global _behavior_cache
+        has_filters = any([severity, rule_code, status != 'all', user_id, compliance_type, from_date, to_date])
+        
+        if use_cache and not has_filters and _behavior_cache['data'] and page == 1:
+            from datetime import datetime, timedelta
+            cache_age = datetime.now() - _behavior_cache['timestamp'] if _behavior_cache['timestamp'] else timedelta(hours=1)
+            if cache_age < timedelta(seconds=120):  # Cache valid for 2 minutes
+                logger.info(f"[CACHE] Returning cached behavior data (age: {cache_age.seconds}s)")
+                return _behavior_cache['data']
+        
+        # Fresh query for filtered requests or cache miss
         monitor = BehaviorMonitor()
         result = monitor.get_behavior_violations(
             page=page,
