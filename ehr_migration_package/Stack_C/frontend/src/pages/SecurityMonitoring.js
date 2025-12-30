@@ -654,82 +654,15 @@ function SecurityMonitoring({ initialMode = 'logs' }) {
       return true;
     });
 
-    // 2. GROUPING / AGGREGATION LOGIC
-    // We want to group logs that are:
-    // - Same User
-    // - Same Time Window (e.g. 5 seconds)
-    // - Same Action/URI
-    // And allow displaying multiple rule violations for that single group.
+    // 2. GROUPING DISABLED - Show each log as individual row
+    // Previously grouped logs by user + timestamp, but this caused has_violation 
+    // from one log to overwrite all logs in the group, showing compliant logs as violations.
+    // Now each log is displayed separately to preserve its original has_violation status.
 
-    const groupedLogs = new Map();
-
-    records.forEach(r => {
-      const ts = r.timestamp ? new Date(r.timestamp).getTime() : 0;
-      const userRaw = r.user || r.user_id || r.actor_name || r.username || 'unknown';
-      const userKey = String(userRaw).toLowerCase().trim();
-
-      // AGGRESSIVE GROUPING: User + Same Minute
-      // Groups all logs from user within the same minute into one row
-      const dateObj = new Date(ts);
-      dateObj.setSeconds(0, 0);
-      const timestampKey = dateObj.toISOString();
-      const key = `${userKey}|${timestampKey}`;
-
-      if (!groupedLogs.has(key)) {
-        groupedLogs.set(key, {
-          ...r,
-          related_rules: [], // Store ALL rules for this user/timestamp
-          grouped_count: 0,
-          is_group_violation: false,
-          earliest_timestamp: ts,
-          latest_timestamp: ts
-        });
-      }
-
-      const groupLeader = groupedLogs.get(key);
-      groupLeader.grouped_count += 1;
-
-      // Track time range
-      if (ts < groupLeader.earliest_timestamp) groupLeader.earliest_timestamp = ts;
-      if (ts > groupLeader.latest_timestamp) groupLeader.latest_timestamp = ts;
-
-      // Logic to merge rule info
-      // If the current record has a violation, we want to ensure the group leader reflects that.
-      const isViolation = r.log_type === 'SECURITY_ALERT' || r.ground_truth_label === 1 || r.has_violation;
-      if (isViolation) {
-        groupLeader.is_group_violation = true;
-        // If group leader wasn't a violation but this one is, upgrade the leader
-        if (!groupLeader.has_violation && !groupLeader.log_type !== 'SECURITY_ALERT') {
-          // Copy violation details to leader
-          Object.assign(groupLeader, {
-            log_type: r.log_type,
-            rule_code: r.rule_code,
-            rule_name: r.rule_name,
-            violation_severity: r.violation_severity,
-            has_violation: true,
-            riskScore: Math.max(groupLeader.riskScore || 0, r.riskScore || 0)
-          });
-        }
-      }
-
-      // Add to related rules if it's a distinct rule code
-      if (r.rule_code && !groupLeader.related_rules.find(rr => rr.rule_code === r.rule_code)) {
-        groupLeader.related_rules.push({
-          rule_code: r.rule_code,
-          rule_name: r.rule_name,
-          violation_type: r.violation_type,
-          severity: r.violation_severity || r.severity,
-          log_id: r.id,
-          timestamp: r.timestamp,
-          has_violation: isViolation
-        });
-      }
-    });
-
-    // Convert grouped logs to array and sort
-    const sortedLogs = Array.from(groupedLogs.values()).sort((a, b) => {
-      const tA = new Date(a.latest_timestamp || a.timestamp).getTime();
-      const tB = new Date(b.latest_timestamp || b.timestamp).getTime();
+    // Sort records by timestamp descending (newest first)
+    const sortedLogs = records.sort((a, b) => {
+      const tA = new Date(a.timestamp).getTime();
+      const tB = new Date(b.timestamp).getTime();
       return tB - tA;
     });
 
