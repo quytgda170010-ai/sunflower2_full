@@ -4636,12 +4636,12 @@ function SecurityMonitoring({ initialMode = 'logs' }) {
                   ) : (
                     filteredLogs.map((record) => {
                       // Logic check for grouping:
-                      // If 'related_rules' exists and has length > 1 (meaning multiple rules for this single event),
-                      // OR if 'grouped_count' > 1 (meaning multiple raw logs merged, e.g. spammy logs)
-                      // Then we treat it as a group.
+                      // DISABLED: Now showing each log as separate row, no grouping
+                      // Previously grouped when 'related_rules' or 'grouped_count' > 1
 
                       const hasRelatedRules = record.related_rules && record.related_rules.length > 0;
-                      const isGrouped = hasRelatedRules || (record.grouped_count > 1);
+                      // DISABLED GROUPING: Show each log as individual row
+                      const isGrouped = false; // Was: hasRelatedRules || (record.grouped_count > 1);
 
                       const rowId = record.log_id || record.id || `${record.timestamp}-${record.user}`;
                       const isExpanded = expandedRows[rowId];
@@ -4728,14 +4728,7 @@ function SecurityMonitoring({ initialMode = 'logs' }) {
                           {/* Main Row */}
                           <TableRow sx={rowStyle} hover>
                             <TableCell padding="checkbox">
-                              {(isGrouped || isFIM) && (
-                                <IconButton
-                                  size="small"
-                                  onClick={() => toggleRow(rowId)}
-                                >
-                                  {isExpanded ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-                                </IconButton>
-                              )}
+                              {/* Expand button removed - grouping disabled */}
                             </TableCell>
                             <TableCell>
                               {isGrouped && record.earliest_timestamp && record.latest_timestamp ? (
