@@ -110,163 +110,61 @@ HTML_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; }
-        .header { background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; }
-        .header h1 { margin: 0; font-size: 24px; }
-        .header p { margin: 5px 0 0 0; opacity: 0.9; }
-        .content { padding: 20px; background: #f5f5f5; }
-        .summary { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
-        .stat-box { flex: 1; min-width: 120px; padding: 15px; border-radius: 8px; text-align: center; }
-        .stat-box.total { background: #e3f2fd; border-left: 4px solid #1976d2; }
-        .stat-box.violations { background: #ffebee; border-left: 4px solid #c62828; }
-        .stat-box.warnings { background: #fff3e0; border-left: 4px solid #ef6c00; }
-        .stat-box.success { background: #e8f5e9; border-left: 4px solid #2e7d32; }
-        .stat-number { font-size: 28px; font-weight: bold; }
-        .stat-label { font-size: 12px; text-transform: uppercase; opacity: 0.8; }
-        .section { background: white; border-radius: 8px; padding: 15px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .section h3 { margin: 0 0 15px 0; color: #1a237e; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px; }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        th { background: #f5f5f5; text-align: left; padding: 10px 8px; border-bottom: 2px solid #e0e0e0; }
-        td { padding: 8px; border-bottom: 1px solid #eee; }
-        tr:hover { background: #fafafa; }
-        .badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; }
-        .badge-danger { background: #ffcdd2; color: #c62828; }
-        .badge-warning { background: #ffe0b2; color: #e65100; }
-        .badge-success { background: #c8e6c9; color: #2e7d32; }
-        .users-list { display: flex; flex-wrap: wrap; gap: 8px; }
-        .user-chip { background: #e3f2fd; color: #1565c0; padding: 5px 12px; border-radius: 16px; font-size: 13px; }
-        .ip-chip { background: #fce4ec; color: #c2185b; padding: 5px 12px; border-radius: 16px; font-size: 13px; font-family: monospace; }
-        .footer { text-align: center; padding: 15px; color: #666; font-size: 12px; }
-        .no-data { text-align: center; color: #999; padding: 20px; }
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+        h2 { color: #1a237e; margin-bottom: 5px; }
+        .time-range { color: #666; font-size: 14px; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #f5f5f5; font-weight: 600; }
+        .number { font-weight: bold; font-size: 18px; }
+        .danger { color: #c62828; }
+        .warning { color: #ef6c00; }
+        .success { color: #2e7d32; }
+        .footer { margin-top: 20px; padding-top: 15px; border-top: 1px solid #ddd; color: #666; font-size: 12px; }
+        .note { background: #e3f2fd; padding: 10px; border-radius: 4px; margin: 15px 0; font-size: 13px; }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>🌙 Báo Cáo Log Ngoài Giờ Làm Việc</h1>
-        <p>Khung giờ: {{ from_time }} → {{ to_time }}</p>
-    </div>
+    <h2>🌙 Báo Cáo Log Ngoài Giờ Làm Việc</h2>
+    <p class="time-range">Khung giờ: {{ from_time }} → {{ to_time }}</p>
     
-    <div class="content">
-        <div class="summary">
-            <div class="stat-box total">
-                <div class="stat-number">{{ stats.total }}</div>
-                <div class="stat-label">Tổng logs</div>
-            </div>
-            <div class="stat-box violations">
-                <div class="stat-number">{{ stats.violations | length }}</div>
-                <div class="stat-label">Vi phạm / Tấn công</div>
-            </div>
-            <div class="stat-box warnings">
-                <div class="stat-number">{{ stats.warnings | length }}</div>
-                <div class="stat-label">Cảnh báo</div>
-            </div>
-            <div class="stat-box success">
-                <div class="stat-number">{{ stats.successes | length }}</div>
-                <div class="stat-label">Thành công</div>
-            </div>
-        </div>
-        
-        <div class="section">
-            <h3>👤 Users hoạt động ngoài giờ ({{ stats.users_active | length }})</h3>
-            {% if stats.users_active %}
-            <div class="users-list">
-                {% for user in stats.users_active %}
-                <span class="user-chip">{{ user }}</span>
-                {% endfor %}
-            </div>
-            {% else %}
-            <p class="no-data">Không có user hoạt động</p>
-            {% endif %}
-        </div>
-        
-        <div class="section">
-            <h3>🌐 IP Addresses ({{ stats.ip_addresses | length }})</h3>
-            {% if stats.ip_addresses %}
-            <div class="users-list">
-                {% for ip in stats.ip_addresses %}
-                <span class="ip-chip">{{ ip }}</span>
-                {% endfor %}
-            </div>
-            {% else %}
-            <p class="no-data">Không có IP</p>
-            {% endif %}
-        </div>
-        
-        {% if stats.violations %}
-        <div class="section">
-            <h3>🚨 Vi phạm & Tấn công ({{ stats.violations | length }})</h3>
-            <table>
-                <tr>
-                    <th>Thời gian</th>
-                    <th>User</th>
-                    <th>Hành động</th>
-                    <th>IP</th>
-                </tr>
-                {% for log in stats.violations[:20] %}
-                <tr>
-                    <td>{{ log.timestamp }}</td>
-                    <td>{{ log.user_id or log.actor_name or 'N/A' }}</td>
-                    <td><span class="badge badge-danger">{{ (log.action or '')[:60] }}</span></td>
-                    <td>{{ log.ip_address or 'N/A' }}</td>
-                </tr>
-                {% endfor %}
-            </table>
-            {% if stats.violations | length > 20 %}
-            <p style="text-align: center; color: #666;">... và {{ stats.violations | length - 20 }} vi phạm khác</p>
-            {% endif %}
-        </div>
-        {% endif %}
-        
-        {% if stats.warnings %}
-        <div class="section">
-            <h3>⚠️ Cảnh báo ({{ stats.warnings | length }})</h3>
-            <table>
-                <tr>
-                    <th>Thời gian</th>
-                    <th>User</th>
-                    <th>Hành động</th>
-                    <th>Status</th>
-                </tr>
-                {% for log in stats.warnings[:15] %}
-                <tr>
-                    <td>{{ log.timestamp }}</td>
-                    <td>{{ log.user_id or log.actor_name or 'N/A' }}</td>
-                    <td>{{ (log.action or '')[:50] }}</td>
-                    <td><span class="badge badge-warning">{{ log.status }}</span></td>
-                </tr>
-                {% endfor %}
-            </table>
-        </div>
-        {% endif %}
-        
-        <div class="section">
-            <h3>✅ Hoạt động thành công gần nhất</h3>
-            {% if stats.successes %}
-            <table>
-                <tr>
-                    <th>Thời gian</th>
-                    <th>User</th>
-                    <th>Hành động</th>
-                    <th>Log Type</th>
-                </tr>
-                {% for log in stats.successes[:10] %}
-                <tr>
-                    <td>{{ log.timestamp }}</td>
-                    <td>{{ log.user_id or log.actor_name or 'N/A' }}</td>
-                    <td>{{ (log.action or '')[:50] }}</td>
-                    <td><span class="badge badge-success">{{ log.log_type or 'N/A' }}</span></td>
-                </tr>
-                {% endfor %}
-            </table>
-            {% else %}
-            <p class="no-data">Không có hoạt động thành công</p>
-            {% endif %}
-        </div>
+    <table>
+        <tr>
+            <th>Thống kê</th>
+            <th>Số lượng</th>
+        </tr>
+        <tr>
+            <td>Tổng logs</td>
+            <td class="number">{{ stats.total }}</td>
+        </tr>
+        <tr>
+            <td>🚨 Vi phạm / Tấn công</td>
+            <td class="number danger">{{ stats.violations | length }}</td>
+        </tr>
+        <tr>
+            <td>⚠️ Cảnh báo</td>
+            <td class="number warning">{{ stats.warnings | length }}</td>
+        </tr>
+        <tr>
+            <td>✅ Thành công</td>
+            <td class="number success">{{ stats.successes | length }}</td>
+        </tr>
+        <tr>
+            <td>👤 Users hoạt động</td>
+            <td class="number">{{ stats.users_active | length }}</td>
+        </tr>
+        <tr>
+            <td>🌐 IP Addresses</td>
+            <td class="number">{{ stats.ip_addresses | length }}</td>
+        </tr>
+    </table>
+    
+    <div class="note">
+        📎 <strong>Chi tiết đầy đủ</strong> trong file Excel đính kèm.
     </div>
     
     <div class="footer">
-        <p>📧 Báo cáo tự động từ SIEM Dashboard | {{ generated_at }}</p>
-        <p>Khung giờ giám sát: 18:00 → 06:00 (ngoài giờ làm việc)</p>
+        📧 Báo cáo tự động từ SIEM Dashboard | {{ generated_at }}
     </div>
 </body>
 </html>
