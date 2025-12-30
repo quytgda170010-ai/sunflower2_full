@@ -109,7 +109,9 @@ services:
       MARIADB_PASSWORD: ${MARIADB_PASSWORD:-Openemr!123}
       TZ: Asia/Ho_Chi_Minh
     ports:
-      - "3306:3306"
+      # SECURITY: Only allow localhost to access MySQL directly
+      # Docker containers use internal network, not this port
+      - "127.0.0.1:3306:3306"
     volumes:
       - db_data:/var/lib/mysql
       - keyring_data:/var/lib/mysql-keyring
