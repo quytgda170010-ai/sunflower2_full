@@ -392,37 +392,61 @@ class BehaviorMonitor:
         if 'openid-connect/token' in uri or '/health' in uri or '/metrics' in uri:
             return False
         
-        # ===== RULE GROUPING OPTIMIZATION =====
+        # ===== LOG-TYPE SPECIFIC RULE MATCHING =====
+        # Only check rules that are relevant to the log type
         log_type = (log.get('log_type') or '').lower()
         purpose = (log.get('purpose') or '').lower()
+        action = (log.get('action') or '').lower()
         
-        # Determine if this is a USER log or SYSTEM log
-        user_log_types = ['emr_access_log', 'encounter_log', 'prescription_log', 'session_log', 'admin_activity_log']
-        system_log_types = ['system_auth_log', 'system_tls_log', 'backup_encryption_log', 'system_compliance_log', 'security_alert']
+        # LOGIN/SESSION LOGS → Only check auth-related rules
+        is_login_log = (
+            purpose == 'authentication' or 
+            log_type in ['session_log', 'system_auth_log'] or
+            'đăng nhập' in action or 'login' in action or
+            '/admin/login' in uri or '/auth' in uri
+        )
         
-        is_user_log = log_type in user_log_types or purpose in ['', 'clinical', 'administrative']
-        is_system_log = log_type in system_log_types or purpose in ['system_compliance', 'authentication', 'backup_encryption']
+        if is_login_log:
+            # Only allow auth-related rules for login logs
+            auth_rule_prefixes = ['SYS-AUTH-', 'R-IAM-', 'LOGIN-', 'R-SEC-']
+            if not any(rule_code.startswith(p) for p in auth_rule_prefixes):
+                logger.debug(f"[LOG_TYPE] Skip non-auth rule {rule_code} for login log")
+                return False
         
-        # Determine if this is a USER rule or SYSTEM rule
-        user_rule_prefixes = ['EMR-', 'RX-', 'QUEUE-', 'LOGIN-', 'R-DAM-', 'R-AUD-', 'R-CON-']
-        system_rule_prefixes = ['SYS-', 'R-SEC-', 'R-IAM-']
+        # EMR ACCESS LOGS → Only check EMR-related rules  
+        is_emr_log = (
+            log_type in ['emr_access_log', 'encounter_log'] or
+            purpose == 'clinical' or
+            'bệnh án' in action or 'hồ sơ' in action or 'emr' in action.lower()
+        )
         
-        is_user_rule = rule_scope == 'USER' or any(rule_code.startswith(p) for p in user_rule_prefixes)
-        is_system_rule = rule_scope == 'SYSTEM' or any(rule_code.startswith(p) for p in system_rule_prefixes)
+        if is_emr_log:
+            # Allow EMR rules and audit rules
+            emr_rule_prefixes = ['EMR-', 'R-AUD-', 'QUEUE-']
+            if not any(rule_code.startswith(p) for p in emr_rule_prefixes):
+                logger.debug(f"[LOG_TYPE] Skip non-EMR rule {rule_code} for EMR log")
+                return False
         
-        # GROUPING: Only apply matching scope
-        if is_user_log and is_system_rule:
-            # Skip system rules for user logs
-            logger.debug(f"[GROUPING] Skip SYSTEM rule {rule_code} for USER log {log.get('id')}")
-            return False
+        # PRESCRIPTION LOGS → Only check RX-related rules
+        is_rx_log = log_type == 'prescription_log' or 'thuốc' in action or 'đơn' in action
         
-        if is_system_log and is_user_rule:
-            # Skip user rules for system logs
-            logger.debug(f"[GROUPING] Skip USER rule {rule_code} for SYSTEM log {log.get('id')}")
-            return False
+        if is_rx_log:
+            rx_rule_prefixes = ['RX-', 'R-AUD-']
+            if not any(rule_code.startswith(p) for p in rx_rule_prefixes):
+                logger.debug(f"[LOG_TYPE] Skip non-RX rule {rule_code} for prescription log")
+                return False
+        
+        # TLS/GATEWAY LOGS → Only check TLS rules
+        is_tls_log = log_type in ['system_tls_log', 'gateway_log'] or purpose == 'system_compliance'
+        
+        if is_tls_log:
+            tls_rule_prefixes = ['SYS-TLS-', 'SYS-ENC-', 'R-SEC-']
+            if not any(rule_code.startswith(p) for p in tls_rule_prefixes):
+                logger.debug(f"[LOG_TYPE] Skip non-TLS rule {rule_code} for TLS log")
+                return False
         
         # Apply rule
-        logger.debug(f"[FULL_CHECK] Checking rule {rule_code} (scope={rule_scope}) against log {log.get('id')} (type={log_type})")
+        logger.debug(f"[MATCHED] Rule {rule_code} applies to log {log.get('id')} (type={log_type})")
         return True
     
     def _rule_applies_strict(self, rule: Dict[str, Any], log: Dict[str, Any]) -> bool:
