@@ -216,11 +216,15 @@ class KeycloakEventCollector:
             import uuid
             log_id = str(uuid.uuid4())
             
+            # Build client_location from realm and clientId
+            client_id_val = event.get('clientId', 'unknown')
+            client_location = f"{self.realm}/{client_id_val}"
+            
             # Insert into access_logs
             sql = """
                 INSERT INTO access_logs 
-                (id, timestamp, user_id, action, status, ip_address, role, log_type, purpose, details)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                (id, timestamp, user_id, action, status, ip_address, role, log_type, purpose, details, client_location)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
             values = (
                 log_id,
@@ -232,7 +236,8 @@ class KeycloakEventCollector:
                 self._get_user_role(username, cur),  # Get role from database or username
                 log_type,
                 'authentication',
-                json.dumps(details, ensure_ascii=False)
+                json.dumps(details, ensure_ascii=False),
+                client_location
             )
             
             cur.execute(sql, values)
