@@ -2022,6 +2022,25 @@ export default function LogDetailsDialog({
         const status = parseInt(selectedLog.status) || 200;
         const isSuccess = status >= 200 && status < 300;
 
+        // PRIORITY 1: Single rule view (clicked from expanded rule list)
+        if (selectedLog._single_rule_view) {
+            if (selectedLog.has_violation) {
+                return {
+                    title: `VI PHẠM: ${selectedLog.rule_code}`,
+                    icon: '🚨',
+                    color: '#d32f2f',
+                    bgColor: '#ffebee'
+                };
+            } else {
+                return {
+                    title: `TUÂN THỦ: ${selectedLog.rule_code}`,
+                    icon: '✅',
+                    color: '#2e7d32',
+                    bgColor: '#e8f5e9'
+                };
+            }
+        }
+
         // Login logs
         if (action.includes('đăng nhập') || action.includes('login')) {
             if (action.includes('thất bại') || action.includes('failed') || !isSuccess) {

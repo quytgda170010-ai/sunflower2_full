@@ -4893,6 +4893,7 @@ function SecurityMonitoring({ initialMode = 'logs' }) {
                                           <TableCell>Tên quy tắc</TableCell>
                                           <TableCell>Đánh giá</TableCell>
                                           <TableCell>Mức độ</TableCell>
+                                          <TableCell align="center">Chi tiết</TableCell>
                                         </TableRow>
                                       </TableHead>
                                       <TableBody>
@@ -4998,6 +4999,30 @@ function SecurityMonitoring({ initialMode = 'logs' }) {
                                                   </TableCell>
                                                   <TableCell>
                                                     {detail.severity || '-'}
+                                                  </TableCell>
+                                                  <TableCell align="center">
+                                                    <Tooltip title={isDetailViolation ? "Xem chi tiết vi phạm" : "Xem chi tiết tuân thủ"}>
+                                                      <IconButton
+                                                        size="small"
+                                                        onClick={() => {
+                                                          // Open dialog with this specific rule context
+                                                          handleOpenDetail({
+                                                            ...record,
+                                                            rule_code: detail.rule_code,
+                                                            rule_name: detail.rule_name,
+                                                            has_violation: isDetailViolation,
+                                                            severity: detail.severity,
+                                                            _single_rule_view: true
+                                                          });
+                                                        }}
+                                                        sx={{
+                                                          color: isDetailViolation ? 'error.main' : 'success.main',
+                                                          '&:hover': { bgcolor: isDetailViolation ? 'error.light' : 'success.light' }
+                                                        }}
+                                                      >
+                                                        <InfoIcon fontSize="small" />
+                                                      </IconButton>
+                                                    </Tooltip>
                                                   </TableCell>
                                                 </TableRow>
                                               );
