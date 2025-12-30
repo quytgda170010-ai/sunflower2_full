@@ -125,8 +125,8 @@ HTML_TEMPLATE = """
     </style>
 </head>
 <body>
-    <h2>🌙 Báo Cáo Log Ngoài Giờ Làm Việc</h2>
-    <p class="time-range">Khung giờ: {{ from_time }} → {{ to_time }}</p>
+    <h2>Báo Cáo Log Ngoài Giờ Làm Việc</h2>
+    <p class="time-range">Khung giờ: {{ from_time }} - {{ to_time }}</p>
     
     <table>
         <tr>
@@ -138,33 +138,33 @@ HTML_TEMPLATE = """
             <td class="number">{{ stats.total }}</td>
         </tr>
         <tr>
-            <td>🚨 Vi phạm / Tấn công</td>
+            <td>Vi phạm / Tấn công</td>
             <td class="number danger">{{ stats.violations | length }}</td>
         </tr>
         <tr>
-            <td>⚠️ Cảnh báo</td>
+            <td>Cảnh báo</td>
             <td class="number warning">{{ stats.warnings | length }}</td>
         </tr>
         <tr>
-            <td>✅ Thành công</td>
+            <td>Thành công</td>
             <td class="number success">{{ stats.successes | length }}</td>
         </tr>
         <tr>
-            <td>👤 Users hoạt động</td>
+            <td>Users hoạt động</td>
             <td class="number">{{ stats.users_active | length }}</td>
         </tr>
         <tr>
-            <td>🌐 IP Addresses</td>
+            <td>IP Addresses</td>
             <td class="number">{{ stats.ip_addresses | length }}</td>
         </tr>
     </table>
     
     <div class="note">
-        📎 <strong>Chi tiết đầy đủ</strong> trong file Excel đính kèm.
+        <strong>Chi tiết đầy đủ</strong> trong file Excel đính kèm.
     </div>
     
     <div class="footer">
-        📧 Báo cáo tự động từ SIEM Dashboard | {{ generated_at }}
+        Báo cáo tự động từ SIEM Dashboard | {{ generated_at }}
     </div>
 </body>
 </html>
