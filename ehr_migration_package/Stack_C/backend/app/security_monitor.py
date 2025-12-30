@@ -262,13 +262,17 @@ class SecurityMonitor:
                 )""")
             elif log_type == 'PRESCRIPTION_LOG':
                 # Filter logs nội dung thuốc: prescription, medication, drug
+                # Only catch: 
+                # 1. Logs with action containing thuốc/prescription/medication/drug
+                # 2. Logs with log_type = PRESCRIPTION_LOG
+                # 3. POST/PUT/PATCH requests to /medical-records (not GET)
                 where_clauses.append("""(
                     a.action LIKE '%thuốc%' 
                     OR a.action LIKE '%prescription%'
                     OR a.action LIKE '%medication%'
                     OR a.action LIKE '%drug%'
-                    OR a.changed_fields LIKE '%prescription%'
-                    OR a.changed_fields LIKE '%medication%'
+                    OR a.log_type IN ('PRESCRIPTION_LOG', 'prescription_log')
+                    OR (a.uri LIKE '%/medical-records%' AND a.method IN ('POST', 'PUT', 'PATCH'))
                 )""")
             elif log_type == 'BACKUP_ENCRYPTION_LOG':
                 # Filter logs backup và encryption
@@ -486,6 +490,34 @@ class SecurityMonitor:
             else:
                 return f'Quản lý phiếu khám{patient_suffix}'
         
+        # Handle /medical-records POST (prescription creation from gateway)
+        elif '/medical-records' in uri_lower:
+            method = log.get('method', '').upper()
+            # Try to get patient info from request_body if not already available
+            if not patient_suffix:
+                import json
+                request_body = log.get('request_body', '') or ''
+                try:
+                    if request_body and isinstance(request_body, str):
+                        body_data = json.loads(request_body)
+                        p_name = body_data.get('patient_name', '')
+                        p_code = body_data.get('patient_code', '')
+                        if p_code and p_name:
+                            patient_suffix = f' - {p_code} - {p_name}'
+                        elif p_name:
+                            patient_suffix = f' - {p_name}'
+                except:
+                    pass
+            
+            if method == 'POST':
+                return f'Tạo đơn thuốc{patient_suffix}'
+            elif method == 'GET':
+                return f'Xem nội dung thuốc{patient_suffix}'
+            elif method in ('PUT', 'PATCH'):
+                return f'Cập nhật đơn thuốc{patient_suffix}'
+            else:
+                return f'Quản lý đơn thuốc{patient_suffix}'
+        
         elif '/prescriptions' in uri_lower or 'prescription' in uri_lower or 'medication' in uri_lower:
             if operation == 'view':
                 return f'Xem nội dung thuốc{patient_suffix}'
@@ -524,6 +556,26 @@ class SecurityMonitor:
         elif patient_code:
             patient_suffix = f' - {patient_code}'
         
+        # Special handling for /medical-records - always show as "Nội dung thuốc"
+        uri_lower = uri.lower()
+        if '/medical-records' in uri_lower:
+            # Try to get patient info from request_body if not already available
+            if not patient_suffix:
+                import json
+                request_body = log.get('request_body', '') or ''
+                try:
+                    if request_body and isinstance(request_body, str):
+                        body_data = json.loads(request_body)
+                        p_name = body_data.get('patient_name', '')
+                        p_code = body_data.get('patient_code', '')
+                        if p_code and p_name:
+                            patient_suffix = f' - {p_code} - {p_name}'
+                        elif p_name:
+                            patient_suffix = f' - {p_name}'
+                except:
+                    pass
+            return f'Nội dung thuốc{patient_suffix}'
+        
         purpose_map = {
             'appointment': 'Quản lý lịch hẹn',
             'patient': 'Quản lý bệnh nhân',
@@ -539,7 +591,8 @@ class SecurityMonitor:
             'setting': 'Cấu hình hệ thống',
             'registration': 'Đăng ký bệnh nhân',
             'record': 'Quản lý hồ sơ',
-            'emr': 'Quản lý hồ sơ bệnh án'
+            'emr': 'Quản lý hồ sơ bệnh án',
+            'treatment': 'Điều trị'
         }
         
         purpose_vn = purpose_map.get(purpose.lower(), purpose)
