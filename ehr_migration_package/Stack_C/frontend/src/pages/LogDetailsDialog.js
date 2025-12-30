@@ -548,9 +548,10 @@ export default function LogDetailsDialog({
         const ruleName = selectedLog.rule_name || 'N/A';
         const logDetails = parseJsonSafe(selectedLog.details) || {};
         const user = selectedLog.user || selectedLog.actor_name || logDetails.username || selectedLog.username || 'Unknown';
-        // Try multiple fields for IP
-        const sourceIP = selectedLog.source_ip || selectedLog.ip_address || selectedLog.client_ip ||
+        // Try multiple fields for IP, only show first if comma-separated
+        const rawIP = selectedLog.source_ip || selectedLog.ip_address || selectedLog.client_ip ||
             logDetails.ip_address || logDetails.source_ip || logDetails.client_ip || 'N/A';
+        const sourceIP = rawIP.split(',')[0].trim();
         // Try multiple fields for action
         const actionText = selectedLog.action || selectedLog.action_description ||
             logDetails.action || logDetails.action_description ||
@@ -2423,9 +2424,13 @@ export default function LogDetailsDialog({
                                     <TableRow>
                                         <TableCell sx={{ fontWeight: 600, bgcolor: '#f5f5f5' }}>Nguồn IP</TableCell>
                                         <TableCell sx={{ fontFamily: 'monospace' }}>
-                                            {selectedLog.source_ip || selectedLog.ip_address || selectedLog.client_ip ||
-                                                (parseJsonSafe(selectedLog.details) || {}).ip_address ||
-                                                (parseJsonSafe(selectedLog.details) || {}).source_ip || 'N/A'}
+                                            {(() => {
+                                                const ip = selectedLog.source_ip || selectedLog.ip_address || selectedLog.client_ip ||
+                                                    (parseJsonSafe(selectedLog.details) || {}).ip_address ||
+                                                    (parseJsonSafe(selectedLog.details) || {}).source_ip || 'N/A';
+                                                // Only show first IP if multiple (comma-separated)
+                                                return ip.split(',')[0].trim();
+                                            })()}
                                         </TableCell>
                                     </TableRow>
                                     {(selectedLog.patient_name || selectedLog.patient_id) && (
