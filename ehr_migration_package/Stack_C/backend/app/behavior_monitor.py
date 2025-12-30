@@ -378,6 +378,8 @@ class BehaviorMonitor:
             'R-RBAC-',  # RBAC policy rules (role assignment, break-glass...)
             'R-SIG-',   # Signature/Certificate rules (chữ ký số, watermark...)
             'R-INT-',   # Integration rules (HL7, FHIR, master data...)
+            'R-CON-',   # Consent/Sharing rules (đồng ý bệnh nhân, chia sẻ dữ liệu...)
+            'R-DAM-',   # Data Management policy rules (export, clipboard, USB...)
         ]
         
         for prefix in reference_rule_prefixes:
