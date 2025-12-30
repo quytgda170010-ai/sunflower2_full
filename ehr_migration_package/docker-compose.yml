@@ -291,6 +291,12 @@ services:
       KEYCLOAK_ADMIN_USER: admin
       KEYCLOAK_ADMIN_PASSWORD: "123456789"
       CORS_ORIGINS: http://103.82.39.79:3000,http://localhost:3002,http://siem-frontend:3002
+      # Email Report Configuration
+      SMTP_HOST: smtp.gmail.com
+      SMTP_PORT: 587
+      SMTP_EMAIL: "tran.giaquy301003@gmail.com"
+      SMTP_PASSWORD: "yzee emcd qwvz xwdp"
+      REPORT_RECIPIENTS: "tran.giaquy301003@gmail.com"
       TZ: ${TZ:-Asia/Ho_Chi_Minh}
 
     depends_on:
