@@ -135,6 +135,14 @@ class KeycloakEventCollector:
             username = event.get('details', {}).get('username', event.get('userId', 'unknown'))
             ip_address = event.get('ipAddress', '')
             
+            # Extract user_agent from event details (Keycloak stores it in details)
+            event_details = event.get('details', {})
+            user_agent = event_details.get('user_agent', event_details.get('userAgent', ''))
+            
+            # Build URI from clientId and realm
+            client_id = event.get('clientId', '')
+            uri = f"/auth/realms/{self.realm}/protocol/openid-connect/token" if client_id else ''
+            
             # Determine action and status based on event type
             if event_type == 'LOGIN':
                 action = f"Đăng nhập thành công - {username}"
@@ -219,8 +227,8 @@ class KeycloakEventCollector:
             # Insert into access_logs
             sql = """
                 INSERT INTO access_logs 
-                (id, timestamp, user_id, action, status, ip_address, role, log_type, purpose, details)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                (id, timestamp, user_id, action, status, ip_address, role, log_type, purpose, details, user_agent, uri)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
             values = (
                 log_id,
@@ -232,7 +240,9 @@ class KeycloakEventCollector:
                 self._get_user_role(username, cur),  # Get role from database or username
                 log_type,
                 'authentication',
-                json.dumps(details, ensure_ascii=False)
+                json.dumps(details, ensure_ascii=False),
+                user_agent,
+                uri
             )
             
             cur.execute(sql, values)
