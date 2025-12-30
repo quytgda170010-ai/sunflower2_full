@@ -32524,3 +32524,39 @@ HUONG DAN
 
 SIEM Dashboard: http://localhost:3002
 ---
+=== EHR ANCHOR HASH REPORT ===
+Thoi gian: 2025-12-30 11:07:57
+
+------------------------------------------------------------
+PATIENT DATA (Phat hien sua/xoa ho so)
+------------------------------------------------------------
+So benh nhan: 9
+Patient Hash: dc97632a26327a4b49d5ac1013287276
+
+Neu hash nay KHAC voi lan truoc -> DATA TAMPERING!
+
+------------------------------------------------------------
+ACCESS LOGS (Phat hien xoa dau vet)
+------------------------------------------------------------
+Tong so dong: 3121
+Dong log cu nhat: 2025-12-21 12:04:38
+
+Neu so dong GIAM hoac dong cu nhat thay doi -> LOG BI XOA!
+
+------------------------------------------------------------
+SECURITY STATUS
+------------------------------------------------------------
+General Log: ON
+Alerts chua xu ly: 3
+IP bi block: 0
+
+------------------------------------------------------------
+HUONG DAN
+------------------------------------------------------------
+1. Luu email nay de so sanh voi lan sau
+2. Neu Patient Hash thay doi -> Kiem tra ai sua ho so
+3. Neu so dong log giam -> Kiem tra ai xoa log
+4. Neu General Log = OFF -> Kiem tra SIEM Dashboard
+
+SIEM Dashboard: http://localhost:3002
+---

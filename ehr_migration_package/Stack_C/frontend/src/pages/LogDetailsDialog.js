@@ -2289,9 +2289,15 @@ export default function LogDetailsDialog({
         }
 
         // PRIORITY 2: Check if log is explicitly COMPLIANT (should override other checks)
+        // Handle both boolean and string values, also check for '::ok' suffix in ID
+        const hasViolationValue = selectedLog.has_violation;
+        const isCompliantById = (selectedLog.id || '').includes('::ok');
         const isExplicitlyCompliant = selectedLog.compliance_status === 'compliant' ||
             selectedLog.severity === 'compliant' ||
-            selectedLog.has_violation === false;
+            hasViolationValue === false ||
+            hasViolationValue === 'false' ||
+            hasViolationValue === 0 ||
+            isCompliantById;
 
         // PRIORITY 3: Detect violations from behavior monitoring flags
         // Only show as violation if NOT explicitly compliant
