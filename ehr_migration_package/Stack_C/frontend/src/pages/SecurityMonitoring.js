@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
   Container,
@@ -83,8 +83,11 @@ function SecurityMonitoring({ initialMode = 'logs' }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(200);
+  const [rowsPerPage, setRowsPerPage] = useState(50); // Reduced for faster initial load
   const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(true); // For infinite scroll
+  const [loadingMore, setLoadingMore] = useState(false); // Loading more data
+  const tableEndRef = useRef(null); // Ref for scroll detection
   const [lastUpdate, setLastUpdate] = useState(null);
   const [violationsOnly, setViolationsOnly] = useState(false);
   const [logTypeFilter, setLogTypeFilter] = useState('all');
@@ -1529,13 +1532,23 @@ function SecurityMonitoring({ initialMode = 'logs' }) {
         const response = await api.get('/api/behavior-monitoring', { params });
         // Ensure we have valid response structure
         if (response && response.data) {
-          setLogs(response.data.data || []);
+          const newData = response.data.data || [];
+          // Infinite scroll: append to existing if page > 0, else replace
+          if (page > 0) {
+            setLogs(prev => [...prev, ...newData]);
+          } else {
+            setLogs(newData);
+          }
           setTotal(response.data.total || 0);
           setBehaviorSummary(response.data.summary || null);
+          // Check if there's more data to load
+          const loadedCount = (page * rowsPerPage) + newData.length;
+          setHasMore(loadedCount < (response.data.total || 0));
         } else {
           setLogs([]);
           setTotal(0);
           setBehaviorSummary(null);
+          setHasMore(false);
         }
       } else if (violationsOnly) {
         const params = {
@@ -1662,6 +1675,7 @@ function SecurityMonitoring({ initialMode = 'logs' }) {
       setError(friendlyMessage);
     } finally {
       setLoading(false);
+      setLoadingMore(false); // Reset infinite scroll loading state
     }
   }, [viewMode, behaviorSeverity, behaviorStatus, behaviorRoleFilter, behaviorRuleFilter, behaviorUserFilter, behaviorComplianceType, page, rowsPerPage, violationsOnly, logTypeFilter, hasLabelFilter, securityRoleFilter, logSourceFilter, fromDate, toDate]);
 
@@ -5019,6 +5033,30 @@ function SecurityMonitoring({ initialMode = 'logs' }) {
                 return `${from}-${to} của ${count}${dateInfo}`;
               }}
             />
+            {/* Load More Button for Infinite Scroll */}
+            {hasMore && isBehaviorView && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  disabled={loadingMore}
+                  onClick={() => {
+                    setLoadingMore(true);
+                    setPage(prev => prev + 1);
+                  }}
+                  startIcon={loadingMore ? <CircularProgress size={16} /> : null}
+                >
+                  {loadingMore ? 'Đang tải...' : `Tải thêm ${rowsPerPage} bản ghi`}
+                </Button>
+              </Box>
+            )}
+            {!hasMore && logs.length > 0 && isBehaviorView && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 1 }}>
+                <Typography variant="caption" color="text.secondary">
+                  Đã tải hết {logs.length} bản ghi
+                </Typography>
+              </Box>
+            )}
           </Paper>
         )}
         {/* Violation Detail Dialog */}
