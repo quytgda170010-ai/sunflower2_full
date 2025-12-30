@@ -392,64 +392,94 @@ class BehaviorMonitor:
         if 'openid-connect/token' in uri or '/health' in uri or '/metrics' in uri:
             return False
         
-        # ===== LOG-TYPE SPECIFIC RULE MATCHING =====
-        # Only check rules that are relevant to the log type
+        # ===== STRICT 1:1 LOG-RULE MAPPING =====
+        # Each log type ONLY checks its specific rules
+        # If no matching log type → don't check ANY rule (avoid false violations)
+        
         log_type = (log.get('log_type') or '').lower()
         purpose = (log.get('purpose') or '').lower()
         action = (log.get('action') or log.get('action_description') or '').lower()
         
-        # LOGIN/SESSION LOGS → Only check auth-related rules
-        is_login_log = (
-            purpose == 'authentication' or 
-            log_type in ['session_log', 'system_auth_log'] or
-            'đăng nhập' in action or 'login' in action or
-            'xác thực' in action or 'authentication' in action or
-            '/admin/login' in uri or '/auth' in uri or
-            '/realms/' in uri  # Keycloak auth
+        # ===== 1. LOGIN SUCCESS LOG =====
+        is_login_success = (
+            purpose == 'authentication' or
+            'đăng nhập thành công' in action or 'login success' in action or
+            (log_type == 'session_log' and 'thành công' in action)
         )
+        if is_login_success:
+            # Only check: LOGIN-001, SYS-AUTH-01
+            allowed = ['LOGIN-001', 'SYS-AUTH-01']
+            return rule_code in allowed
         
-        if is_login_log:
-            # Only allow auth-related rules for login logs
-            auth_rule_prefixes = ['SYS-AUTH-', 'R-IAM-', 'LOGIN-', 'R-SEC-']
-            if not any(rule_code.startswith(p) for p in auth_rule_prefixes):
-                # Skip ALL other rules for login logs
-                return False
-        
-        # EMR ACCESS LOGS → Only check EMR-related rules  
-        is_emr_log = (
-            log_type in ['emr_access_log', 'encounter_log'] or
-            purpose == 'clinical' or
-            'bệnh án' in action or 'hồ sơ' in action or 'emr' in action.lower()
+        # ===== 2. LOGIN FAILED LOG =====
+        is_login_failed = (
+            'đăng nhập thất bại' in action or 'login failed' in action or
+            'sai mật khẩu' in action or 'brute' in action.lower()
         )
+        if is_login_failed:
+            # Only check: SYS-AUTH-01, SYS-AUTH-03, R-IAM-06
+            allowed = ['SYS-AUTH-01', 'SYS-AUTH-03', 'R-IAM-06']
+            return rule_code in allowed
         
-        if is_emr_log:
-            # Allow EMR rules and audit rules
-            emr_rule_prefixes = ['EMR-', 'R-AUD-', 'QUEUE-']
-            if not any(rule_code.startswith(p) for p in emr_rule_prefixes):
-                logger.debug(f"[LOG_TYPE] Skip non-EMR rule {rule_code} for EMR log")
-                return False
+        # ===== 3. EMR READ LOG =====
+        is_emr_read = (
+            log_type == 'emr_access_log' or
+            'xem hồ sơ' in action or 'đọc bệnh án' in action or 
+            'emr read' in action.lower() or 'view' in action.lower()
+        )
+        if is_emr_read:
+            allowed = ['EMR-READ-001']
+            return rule_code in allowed
         
-        # PRESCRIPTION LOGS → Only check RX-related rules
-        is_rx_log = log_type == 'prescription_log' or 'thuốc' in action or 'đơn' in action
+        # ===== 4. EMR UPDATE LOG =====
+        is_emr_update = (
+            'sửa hồ sơ' in action or 'cập nhật bệnh án' in action or
+            'emr update' in action.lower() or 'chỉnh sửa' in action
+        )
+        if is_emr_update:
+            allowed = ['EMR-UPDATE-001']
+            return rule_code in allowed
         
-        if is_rx_log:
-            rx_rule_prefixes = ['RX-', 'R-AUD-']
-            if not any(rule_code.startswith(p) for p in rx_rule_prefixes):
-                logger.debug(f"[LOG_TYPE] Skip non-RX rule {rule_code} for prescription log")
-                return False
+        # ===== 5. EMR EXPORT LOG =====
+        is_emr_export = (
+            'xuất hồ sơ' in action or 'export' in action.lower() or
+            'tải xuống' in action or 'download' in action.lower()
+        )
+        if is_emr_export:
+            allowed = ['EMR-EXPORT-001']
+            return rule_code in allowed
         
-        # TLS/GATEWAY LOGS → Only check TLS rules
-        is_tls_log = log_type in ['system_tls_log', 'gateway_log'] or purpose == 'system_compliance'
+        # ===== 6. EMR PRINT LOG =====
+        is_emr_print = 'in hồ sơ' in action or 'print' in action.lower()
+        if is_emr_print:
+            allowed = ['EMR-PRINT-001']
+            return rule_code in allowed
         
-        if is_tls_log:
-            tls_rule_prefixes = ['SYS-TLS-', 'SYS-ENC-', 'R-SEC-']
-            if not any(rule_code.startswith(p) for p in tls_rule_prefixes):
-                logger.debug(f"[LOG_TYPE] Skip non-TLS rule {rule_code} for TLS log")
-                return False
+        # ===== 7. PRESCRIPTION LOG =====
+        is_prescription = (
+            log_type == 'prescription_log' or
+            'kê đơn' in action or 'thuốc' in action
+        )
+        if is_prescription:
+            allowed = ['RX-ISSUE-001']
+            return rule_code in allowed
         
-        # Apply rule
-        logger.debug(f"[MATCHED] Rule {rule_code} applies to log {log.get('id')} (type={log_type})")
-        return True
+        # ===== 8. QUEUE LOG =====
+        is_queue = 'hàng chờ' in action or 'queue' in action.lower()
+        if is_queue:
+            allowed = ['QUEUE-ACCESS-001']
+            return rule_code in allowed
+        
+        # ===== 9. TLS/ENCRYPTION LOG =====
+        is_tls = log_type in ['system_tls_log', 'gateway_log'] or purpose == 'system_compliance'
+        if is_tls:
+            allowed = ['SYS-TLS-01', 'SYS-TLS-02', 'SYS-ENC-01']
+            return rule_code in allowed
+        
+        # ===== DEFAULT: Unknown log type → DON'T CHECK ANY RULE =====
+        # This prevents false violations from unmatched logs
+        logger.debug(f"[SKIP] Unknown log type: {log_type}, action: {action[:50]}... - skipping all rules")
+        return False
     
     def _rule_applies_strict(self, rule: Dict[str, Any], log: Dict[str, Any]) -> bool:
         """
