@@ -4,8 +4,11 @@
 import os
 import smtplib
 import logging
+import io
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 import mysql.connector
@@ -285,8 +288,116 @@ def generate_html_report(logs: List[Dict], from_time: datetime, to_time: datetim
     return html
 
 
-def send_email_report(subject: str, html_content: str, recipients: List[str]) -> bool:
-    """Send HTML email via Gmail SMTP"""
+def generate_excel_report(logs: List[Dict], from_time: datetime, to_time: datetime) -> bytes:
+    """Generate Excel file with all log details"""
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+        
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Off-Hours Logs"
+        
+        # Header styling
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill(start_color="1a237e", end_color="1a237e", fill_type="solid")
+        border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+        
+        # Headers
+        headers = ['Thời gian', 'User', 'Role', 'Hành động', 'Status', 'IP Address', 'Log Type', 'URI', 'Chi tiết']
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal='center')
+            cell.border = border
+        
+        # Column widths
+        ws.column_dimensions['A'].width = 20  # Timestamp
+        ws.column_dimensions['B'].width = 15  # User
+        ws.column_dimensions['C'].width = 12  # Role
+        ws.column_dimensions['D'].width = 50  # Action
+        ws.column_dimensions['E'].width = 10  # Status
+        ws.column_dimensions['F'].width = 15  # IP
+        ws.column_dimensions['G'].width = 20  # Log Type
+        ws.column_dimensions['H'].width = 30  # URI
+        ws.column_dimensions['I'].width = 40  # Details
+        
+        # Data rows
+        for row_num, log in enumerate(logs, 2):
+            timestamp = log.get('timestamp')
+            if hasattr(timestamp, 'strftime'):
+                timestamp = timestamp.strftime('%d/%m/%Y %H:%M:%S')
+            
+            ws.cell(row=row_num, column=1, value=str(timestamp or ''))
+            ws.cell(row=row_num, column=2, value=log.get('user_id') or log.get('actor_name') or '')
+            ws.cell(row=row_num, column=3, value=log.get('role') or '')
+            ws.cell(row=row_num, column=4, value=log.get('action') or '')
+            ws.cell(row=row_num, column=5, value=str(log.get('status') or ''))
+            ws.cell(row=row_num, column=6, value=log.get('ip_address') or '')
+            ws.cell(row=row_num, column=7, value=log.get('log_type') or '')
+            ws.cell(row=row_num, column=8, value=log.get('uri') or '')
+            
+            # Details (truncated)
+            details = log.get('details') or ''
+            if isinstance(details, dict):
+                import json
+                details = json.dumps(details, ensure_ascii=False)[:200]
+            ws.cell(row=row_num, column=9, value=str(details)[:200] if details else '')
+            
+            # Apply border
+            for col in range(1, 10):
+                ws.cell(row=row_num, column=col).border = border
+        
+        # Add summary sheet
+        ws_summary = wb.create_sheet("Tổng kết")
+        stats = categorize_logs(logs)
+        
+        summary_data = [
+            ['BÁO CÁO LOG NGOÀI GIỜ LÀM VIỆC', ''],
+            ['', ''],
+            ['Khung giờ', f"{from_time.strftime('%d/%m/%Y %H:%M')} → {to_time.strftime('%d/%m/%Y %H:%M')}"],
+            ['', ''],
+            ['THỐNG KÊ', 'SỐ LƯỢNG'],
+            ['Tổng logs', stats['total']],
+            ['Vi phạm / Tấn công', len(stats['violations'])],
+            ['Cảnh báo', len(stats['warnings'])],
+            ['Thành công', len(stats['successes'])],
+            ['', ''],
+            ['Users hoạt động', ', '.join(stats['users_active'][:10])],
+            ['IP Addresses', ', '.join(stats['ip_addresses'][:10])],
+        ]
+        
+        for row_num, (label, value) in enumerate(summary_data, 1):
+            ws_summary.cell(row=row_num, column=1, value=label)
+            ws_summary.cell(row=row_num, column=2, value=value)
+            if row_num == 1:
+                ws_summary.cell(row=row_num, column=1).font = Font(bold=True, size=14)
+            if row_num == 5:
+                ws_summary.cell(row=row_num, column=1).font = Font(bold=True)
+                ws_summary.cell(row=row_num, column=2).font = Font(bold=True)
+        
+        ws_summary.column_dimensions['A'].width = 25
+        ws_summary.column_dimensions['B'].width = 50
+        
+        # Save to bytes
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+        return output.getvalue()
+        
+    except Exception as e:
+        logger.error(f"Error generating Excel report: {e}")
+        return None
+
+
+def send_email_report(subject: str, html_content: str, recipients: List[str], excel_data: bytes = None, excel_filename: str = None) -> bool:
+    """Send HTML email via Gmail SMTP with optional Excel attachment"""
     if not SMTP_EMAIL or not SMTP_PASSWORD:
         logger.error("SMTP_EMAIL or SMTP_PASSWORD not configured")
         return False
@@ -296,7 +407,7 @@ def send_email_report(subject: str, html_content: str, recipients: List[str]) ->
         return False
     
     try:
-        msg = MIMEMultipart('alternative')
+        msg = MIMEMultipart('mixed')  # Changed to 'mixed' for attachments
         msg['Subject'] = subject
         msg['From'] = f"SIEM Dashboard <{SMTP_EMAIL}>"
         msg['To'] = ', '.join(recipients)
@@ -304,6 +415,15 @@ def send_email_report(subject: str, html_content: str, recipients: List[str]) ->
         # Attach HTML content
         html_part = MIMEText(html_content, 'html', 'utf-8')
         msg.attach(html_part)
+        
+        # Attach Excel file if provided
+        if excel_data and excel_filename:
+            excel_part = MIMEBase('application', 'vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            excel_part.set_payload(excel_data)
+            encoders.encode_base64(excel_part)
+            excel_part.add_header('Content-Disposition', 'attachment', filename=excel_filename)
+            msg.attach(excel_part)
+            logger.info(f"Excel attachment added: {excel_filename}")
         
         # Send via SMTP
         with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
@@ -341,6 +461,14 @@ def run_daily_off_hours_report():
         # Generate report
         html_content = generate_html_report(logs, from_time, to_time)
         
+        # Generate Excel attachment if logs > 20
+        excel_data = None
+        excel_filename = None
+        if len(logs) > 20:
+            excel_data = generate_excel_report(logs, from_time, to_time)
+            excel_filename = f"off_hours_logs_{from_time.strftime('%Y%m%d')}.xlsx"
+            logger.info(f"Generated Excel report: {excel_filename}")
+        
         # Prepare subject
         stats = categorize_logs(logs)
         subject = f"🌙 Báo cáo ngoài giờ {from_time.strftime('%d/%m')} | {len(logs)} logs | {len(stats['violations'])} vi phạm"
@@ -351,7 +479,7 @@ def run_daily_off_hours_report():
             logger.warning("No recipients configured, skipping email send")
             return
         
-        success = send_email_report(subject, html_content, recipients)
+        success = send_email_report(subject, html_content, recipients, excel_data, excel_filename)
         
         if success:
             logger.info("Daily off-hours report sent successfully")
@@ -386,12 +514,16 @@ def send_test_report(recipient_email: Optional[str] = None) -> Dict[str, Any]:
         logs = get_off_hours_logs(from_time, to_time)
         html_content = generate_html_report(logs, from_time, to_time)
         
+        # Generate Excel attachment
+        excel_data = generate_excel_report(logs, from_time, to_time)
+        excel_filename = f"test_off_hours_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+        
         stats = categorize_logs(logs)
         subject = f"[TEST] 🌙 Báo cáo ngoài giờ | {len(logs)} logs"
         
         recipients = [recipient_email] if recipient_email else [r.strip() for r in REPORT_RECIPIENTS if r.strip()]
         
-        success = send_email_report(subject, html_content, recipients)
+        success = send_email_report(subject, html_content, recipients, excel_data, excel_filename)
         
         return {
             'success': success,
@@ -399,7 +531,8 @@ def send_test_report(recipient_email: Optional[str] = None) -> Dict[str, Any]:
             'violations': len(stats['violations']),
             'warnings': len(stats['warnings']),
             'recipients': recipients,
-            'time_range': f"{from_time} -> {to_time}"
+            'time_range': f"{from_time} -> {to_time}",
+            'excel_attached': True if excel_data else False
         }
         
     except Exception as e:
