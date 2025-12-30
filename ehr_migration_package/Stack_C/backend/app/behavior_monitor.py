@@ -396,21 +396,23 @@ class BehaviorMonitor:
         # Only check rules that are relevant to the log type
         log_type = (log.get('log_type') or '').lower()
         purpose = (log.get('purpose') or '').lower()
-        action = (log.get('action') or '').lower()
+        action = (log.get('action') or log.get('action_description') or '').lower()
         
         # LOGIN/SESSION LOGS → Only check auth-related rules
         is_login_log = (
             purpose == 'authentication' or 
             log_type in ['session_log', 'system_auth_log'] or
             'đăng nhập' in action or 'login' in action or
-            '/admin/login' in uri or '/auth' in uri
+            'xác thực' in action or 'authentication' in action or
+            '/admin/login' in uri or '/auth' in uri or
+            '/realms/' in uri  # Keycloak auth
         )
         
         if is_login_log:
             # Only allow auth-related rules for login logs
             auth_rule_prefixes = ['SYS-AUTH-', 'R-IAM-', 'LOGIN-', 'R-SEC-']
             if not any(rule_code.startswith(p) for p in auth_rule_prefixes):
-                logger.debug(f"[LOG_TYPE] Skip non-auth rule {rule_code} for login log")
+                # Skip ALL other rules for login logs
                 return False
         
         # EMR ACCESS LOGS → Only check EMR-related rules  
