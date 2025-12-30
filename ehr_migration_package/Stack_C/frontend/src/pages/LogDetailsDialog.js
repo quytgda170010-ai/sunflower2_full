@@ -2269,6 +2269,32 @@ export default function LogDetailsDialog({
         const status = parseInt(selectedLog.status) || 200;
         const isSuccess = status >= 200 && status < 300;
 
+        // DEBUG: Log values to browser console
+        console.log('[getLogInfo DEBUG]', {
+            has_violation: selectedLog.has_violation,
+            severity: selectedLog.severity,
+            compliance_status: selectedLog.compliance_status,
+            rule_code: selectedLog.rule_code,
+            id: selectedLog.id
+        });
+
+        // ===== PRIORITY 0: Explicitly check has_violation field FIRST =====
+        // This takes highest priority - if has_violation is explicitly false, show TUÂN THỦ
+        if (selectedLog.has_violation === false ||
+            selectedLog.has_violation === 'false' ||
+            selectedLog.has_violation === 0 ||
+            selectedLog.severity === 'compliant' ||
+            selectedLog.compliance_status === 'compliant' ||
+            (selectedLog.id || '').includes('::ok')) {
+            // COMPLIANT LOG - GREEN
+            return {
+                title: selectedLog.rule_code ? `TUÂN THỦ: ${selectedLog.rule_code}` : 'TUÂN THỦ QUY TẮC',
+                icon: '✅',
+                color: '#2e7d32',
+                bgColor: '#e8f5e9'
+            };
+        }
+
         // PRIORITY 1: Single rule view (clicked from expanded rule list)
         if (selectedLog._single_rule_view) {
             if (selectedLog.has_violation) {
@@ -2288,20 +2314,9 @@ export default function LogDetailsDialog({
             }
         }
 
-        // PRIORITY 2: Check if log is explicitly COMPLIANT (should override other checks)
-        // Handle both boolean and string values, also check for '::ok' suffix in ID
-        const hasViolationValue = selectedLog.has_violation;
-        const isCompliantById = (selectedLog.id || '').includes('::ok');
-        const isExplicitlyCompliant = selectedLog.compliance_status === 'compliant' ||
-            selectedLog.severity === 'compliant' ||
-            hasViolationValue === false ||
-            hasViolationValue === 'false' ||
-            hasViolationValue === 0 ||
-            isCompliantById;
-
-        // PRIORITY 3: Detect violations from behavior monitoring flags
-        // Only show as violation if NOT explicitly compliant
-        if (!isExplicitlyCompliant && (isViolation || isSQLi || isBruteForce || isSIEMLogTampering)) {
+        // PRIORITY 2: Detect violations from behavior monitoring flags
+        // (Compliant logs already returned in PRIORITY 0, so only violations reach here)
+        if (isViolation || isSQLi || isBruteForce || isSIEMLogTampering) {
             const ruleCode = selectedLog.rule_code || 'SECURITY';
             if (isSQLi) {
                 return { title: 'TẤN CÔNG SQL INJECTION', icon: '🛡️', color: '#b71c1c', bgColor: '#ffebee' };
@@ -2315,10 +2330,7 @@ export default function LogDetailsDialog({
             return { title: `VI PHẠM: ${ruleCode}`, icon: '⚠️', color: '#d32f2f', bgColor: '#ffebee' };
         }
 
-        // PRIORITY 4: Show COMPLIANT for logs with rule_code that passed
-        if (isExplicitlyCompliant && selectedLog.rule_code) {
-            return { title: `TUÂN THỦ: ${selectedLog.rule_code}`, icon: '✅', color: '#2e7d32', bgColor: '#e8f5e9' };
-        }
+        // (PRIORITY 4 removed - compliant logs now handled in PRIORITY 0 above)
 
         // Login logs
         if (action.includes('đăng nhập') || action.includes('login')) {
