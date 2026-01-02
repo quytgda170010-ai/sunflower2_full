@@ -32596,3 +32596,1227 @@ HUONG DAN
 
 SIEM Dashboard: http://localhost:3002
 ---
+=== EHR ANCHOR HASH REPORT ===
+Thoi gian: 2025-12-30 13:07:57
+
+------------------------------------------------------------
+PATIENT DATA (Phat hien sua/xoa ho so)
+------------------------------------------------------------
+So benh nhan: 9
+Patient Hash: dc97632a26327a4b49d5ac1013287276
+
+Neu hash nay KHAC voi lan truoc -> DATA TAMPERING!
+
+------------------------------------------------------------
+ACCESS LOGS (Phat hien xoa dau vet)
+------------------------------------------------------------
+Tong so dong: 3217
+Dong log cu nhat: 2025-12-21 12:04:38
+
+Neu so dong GIAM hoac dong cu nhat thay doi -> LOG BI XOA!
+
+------------------------------------------------------------
+SECURITY STATUS
+------------------------------------------------------------
+General Log: ON
+Alerts chua xu ly: 3
+IP bi block: 0
+
+------------------------------------------------------------
+HUONG DAN
+------------------------------------------------------------
+1. Luu email nay de so sanh voi lan sau
+2. Neu Patient Hash thay doi -> Kiem tra ai sua ho so
+3. Neu so dong log giam -> Kiem tra ai xoa log
+4. Neu General Log = OFF -> Kiem tra SIEM Dashboard
+
+SIEM Dashboard: http://localhost:3002
+---
+=== EHR ANCHOR HASH REPORT ===
+Thoi gian: 2025-12-30 14:07:57
+
+------------------------------------------------------------
+PATIENT DATA (Phat hien sua/xoa ho so)
+------------------------------------------------------------
+So benh nhan: 9
+Patient Hash: dc97632a26327a4b49d5ac1013287276
+
+Neu hash nay KHAC voi lan truoc -> DATA TAMPERING!
+
+------------------------------------------------------------
+ACCESS LOGS (Phat hien xoa dau vet)
+------------------------------------------------------------
+Tong so dong: 3265
+Dong log cu nhat: 2025-12-21 12:04:38
+
+Neu so dong GIAM hoac dong cu nhat thay doi -> LOG BI XOA!
+
+------------------------------------------------------------
+SECURITY STATUS
+------------------------------------------------------------
+General Log: ON
+Alerts chua xu ly: 3
+IP bi block: 0
+
+------------------------------------------------------------
+HUONG DAN
+------------------------------------------------------------
+1. Luu email nay de so sanh voi lan sau
+2. Neu Patient Hash thay doi -> Kiem tra ai sua ho so
+3. Neu so dong log giam -> Kiem tra ai xoa log
+4. Neu General Log = OFF -> Kiem tra SIEM Dashboard
+
+SIEM Dashboard: http://localhost:3002
+---
+=== EHR ANCHOR HASH REPORT ===
+Thoi gian: 2025-12-30 15:07:57
+
+------------------------------------------------------------
+PATIENT DATA (Phat hien sua/xoa ho so)
+------------------------------------------------------------
+So benh nhan: 9
+Patient Hash: dc97632a26327a4b49d5ac1013287276
+
+Neu hash nay KHAC voi lan truoc -> DATA TAMPERING!
+
+------------------------------------------------------------
+ACCESS LOGS (Phat hien xoa dau vet)
+------------------------------------------------------------
+Tong so dong: 3313
+Dong log cu nhat: 2025-12-21 12:04:38
+
+Neu so dong GIAM hoac dong cu nhat thay doi -> LOG BI XOA!
+
+------------------------------------------------------------
+SECURITY STATUS
+------------------------------------------------------------
+General Log: ON
+Alerts chua xu ly: 3
+IP bi block: 0
+
+------------------------------------------------------------
+HUONG DAN
+------------------------------------------------------------
+1. Luu email nay de so sanh voi lan sau
+2. Neu Patient Hash thay doi -> Kiem tra ai sua ho so
+3. Neu so dong log giam -> Kiem tra ai xoa log
+4. Neu General Log = OFF -> Kiem tra SIEM Dashboard
+
+SIEM Dashboard: http://localhost:3002
+---
+=== EHR ANCHOR HASH REPORT ===
+Thoi gian: 2025-12-30 16:07:57
+
+------------------------------------------------------------
+PATIENT DATA (Phat hien sua/xoa ho so)
+------------------------------------------------------------
+So benh nhan: 9
+Patient Hash: dc97632a26327a4b49d5ac1013287276
+
+Neu hash nay KHAC voi lan truoc -> DATA TAMPERING!
+
+------------------------------------------------------------
+ACCESS LOGS (Phat hien xoa dau vet)
+------------------------------------------------------------
+Tong so dong: 3361
+Dong log cu nhat: 2025-12-21 12:04:38
+
+Neu so dong GIAM hoac dong cu nhat thay doi -> LOG BI XOA!
+
+------------------------------------------------------------
+SECURITY STATUS
+------------------------------------------------------------
+General Log: ON
+Alerts chua xu ly: 3
+IP bi block: 0
+
+------------------------------------------------------------
+HUONG DAN
+------------------------------------------------------------
+1. Luu email nay de so sanh voi lan sau
+2. Neu Patient Hash thay doi -> Kiem tra ai sua ho so
+3. Neu so dong log giam -> Kiem tra ai xoa log
+4. Neu General Log = OFF -> Kiem tra SIEM Dashboard
+
+SIEM Dashboard: http://localhost:3002
+---
+=== EHR ANCHOR HASH REPORT ===
+Thoi gian: 2025-12-30 17:07:57
+
+------------------------------------------------------------
+PATIENT DATA (Phat hien sua/xoa ho so)
+------------------------------------------------------------
+So benh nhan: 9
+Patient Hash: dc97632a26327a4b49d5ac1013287276
+
+Neu hash nay KHAC voi lan truoc -> DATA TAMPERING!
+
+------------------------------------------------------------
+ACCESS LOGS (Phat hien xoa dau vet)
+------------------------------------------------------------
+Tong so dong: 3409
+Dong log cu nhat: 2025-12-21 12:04:38
+
+Neu so dong GIAM hoac dong cu nhat thay doi -> LOG BI XOA!
+
+------------------------------------------------------------
+SECURITY STATUS
+------------------------------------------------------------
+General Log: ON
+Alerts chua xu ly: 3
+IP bi block: 0
+
+------------------------------------------------------------
+HUONG DAN
+------------------------------------------------------------
+1. Luu email nay de so sanh voi lan sau
+2. Neu Patient Hash thay doi -> Kiem tra ai sua ho so
+3. Neu so dong log giam -> Kiem tra ai xoa log
+4. Neu General Log = OFF -> Kiem tra SIEM Dashboard
+
+SIEM Dashboard: http://localhost:3002
+---
+=== EHR ANCHOR HASH REPORT ===
+Thoi gian: 2025-12-30 18:07:57
+
+------------------------------------------------------------
+PATIENT DATA (Phat hien sua/xoa ho so)
+------------------------------------------------------------
+So benh nhan: 9
+Patient Hash: dc97632a26327a4b49d5ac1013287276
+
+Neu hash nay KHAC voi lan truoc -> DATA TAMPERING!
+
+------------------------------------------------------------
+ACCESS LOGS (Phat hien xoa dau vet)
+------------------------------------------------------------
+Tong so dong: 3457
+Dong log cu nhat: 2025-12-21 12:04:38
+
+Neu so dong GIAM hoac dong cu nhat thay doi -> LOG BI XOA!
+
+------------------------------------------------------------
+SECURITY STATUS
+------------------------------------------------------------
+General Log: ON
+Alerts chua xu ly: 3
+IP bi block: 0
+
+------------------------------------------------------------
+HUONG DAN
+------------------------------------------------------------
+1. Luu email nay de so sanh voi lan sau
+2. Neu Patient Hash thay doi -> Kiem tra ai sua ho so
+3. Neu so dong log giam -> Kiem tra ai xoa log
+4. Neu General Log = OFF -> Kiem tra SIEM Dashboard
+
+SIEM Dashboard: http://localhost:3002
+---
+=== EHR ANCHOR HASH REPORT ===
+Thoi gian: 2025-12-30 19:07:57
+
+------------------------------------------------------------
+PATIENT DATA (Phat hien sua/xoa ho so)
+------------------------------------------------------------
+So benh nhan: 9
+Patient Hash: dc97632a26327a4b49d5ac1013287276
+
+Neu hash nay KHAC voi lan truoc -> DATA TAMPERING!
+
+------------------------------------------------------------
+ACCESS LOGS (Phat hien xoa dau vet)
+------------------------------------------------------------
+Tong so dong: 3505
+Dong log cu nhat: 2025-12-21 12:04:38
+
+Neu so dong GIAM hoac dong cu nhat thay doi -> LOG BI XOA!
+
+------------------------------------------------------------
+SECURITY STATUS
+------------------------------------------------------------
+General Log: ON
+Alerts chua xu ly: 3
+IP bi block: 0
+
+------------------------------------------------------------
+HUONG DAN
+------------------------------------------------------------
+1. Luu email nay de so sanh voi lan sau
+2. Neu Patient Hash thay doi -> Kiem tra ai sua ho so
+3. Neu so dong log giam -> Kiem tra ai xoa log
+4. Neu General Log = OFF -> Kiem tra SIEM Dashboard
+
+SIEM Dashboard: http://localhost:3002
+---
+=== EHR ANCHOR HASH REPORT ===
+Thoi gian: 2025-12-30 20:07:57
+
+------------------------------------------------------------
+PATIENT DATA (Phat hien sua/xoa ho so)
+------------------------------------------------------------
+So benh nhan: 9
+Patient Hash: dc97632a26327a4b49d5ac1013287276
+
+Neu hash nay KHAC voi lan truoc -> DATA TAMPERING!
+
+------------------------------------------------------------
+ACCESS LOGS (Phat hien xoa dau vet)
+------------------------------------------------------------
+Tong so dong: 3553
+Dong log cu nhat: 2025-12-21 12:04:38
+
+Neu so dong GIAM hoac dong cu nhat thay doi -> LOG BI XOA!
+
+------------------------------------------------------------
+SECURITY STATUS
+------------------------------------------------------------
+General Log: ON
+Alerts chua xu ly: 3
+IP bi block: 0
+
+------------------------------------------------------------
+HUONG DAN
+------------------------------------------------------------
+1. Luu email nay de so sanh voi lan sau
+2. Neu Patient Hash thay doi -> Kiem tra ai sua ho so
+3. Neu so dong log giam -> Kiem tra ai xoa log
+4. Neu General Log = OFF -> Kiem tra SIEM Dashboard
+
+SIEM Dashboard: http://localhost:3002
+---
+=== EHR ANCHOR HASH REPORT ===
+Thoi gian: 2025-12-30 21:07:57
+
+------------------------------------------------------------
+PATIENT DATA (Phat hien sua/xoa ho so)
+------------------------------------------------------------
+So benh nhan: 9
+Patient Hash: dc97632a26327a4b49d5ac1013287276
+
+Neu hash nay KHAC voi lan truoc -> DATA TAMPERING!
+
+------------------------------------------------------------
+ACCESS LOGS (Phat hien xoa dau vet)
+------------------------------------------------------------
+Tong so dong: 3601
+Dong log cu nhat: 2025-12-21 12:04:38
+
+Neu so dong GIAM hoac dong cu nhat thay doi -> LOG BI XOA!
+
+------------------------------------------------------------
+SECURITY STATUS
+------------------------------------------------------------
+General Log: ON
+Alerts chua xu ly: 3
+IP bi block: 0
+
+------------------------------------------------------------
+HUONG DAN
+------------------------------------------------------------
+1. Luu email nay de so sanh voi lan sau
+2. Neu Patient Hash thay doi -> Kiem tra ai sua ho so
+3. Neu so dong log giam -> Kiem tra ai xoa log
+4. Neu General Log = OFF -> Kiem tra SIEM Dashboard
+
+SIEM Dashboard: http://localhost:3002
+---
+=== EHR ANCHOR HASH REPORT ===
+Thoi gian: 2025-12-30 22:07:56
+
+------------------------------------------------------------
+PATIENT DATA (Phat hien sua/xoa ho so)
+------------------------------------------------------------
+So benh nhan: 
+Patient Hash: 
+
+Neu hash nay KHAC voi lan truoc -> DATA TAMPERING!
+
+------------------------------------------------------------
+ACCESS LOGS (Phat hien xoa dau vet)
+------------------------------------------------------------
+Tong so dong: 
+Dong log cu nhat: 
+
+Neu so dong GIAM hoac dong cu nhat thay doi -> LOG BI XOA!
+
+------------------------------------------------------------
+SECURITY STATUS
+------------------------------------------------------------
+General Log: OFF - WARNING!
+Alerts chua xu ly: 
+IP bi block: 
+
+------------------------------------------------------------
+HUONG DAN
+------------------------------------------------------------
+1. Luu email nay de so sanh voi lan sau
+2. Neu Patient Hash thay doi -> Kiem tra ai sua ho so
+3. Neu so dong log giam -> Kiem tra ai xoa log
+4. Neu General Log = OFF -> Kiem tra SIEM Dashboard
+
+SIEM Dashboard: http://localhost:3002
+---
+=== EHR ANCHOR HASH REPORT ===
+Thoi gian: 2025-12-31 09:07:56
+
+------------------------------------------------------------
+PATIENT DATA (Phat hien sua/xoa ho so)
+------------------------------------------------------------
+So benh nhan: 
+Patient Hash: 
+
+Neu hash nay KHAC voi lan truoc -> DATA TAMPERING!
+
+------------------------------------------------------------
+ACCESS LOGS (Phat hien xoa dau vet)
+------------------------------------------------------------
+Tong so dong: 
+Dong log cu nhat: 
+
+Neu so dong GIAM hoac dong cu nhat thay doi -> LOG BI XOA!
+
+------------------------------------------------------------
+SECURITY STATUS
+------------------------------------------------------------
+General Log: OFF - WARNING!
+Alerts chua xu ly: 
+IP bi block: 
+
+------------------------------------------------------------
+HUONG DAN
+------------------------------------------------------------
+1. Luu email nay de so sanh voi lan sau
+2. Neu Patient Hash thay doi -> Kiem tra ai sua ho so
+3. Neu so dong log giam -> Kiem tra ai xoa log
+4. Neu General Log = OFF -> Kiem tra SIEM Dashboard
+
+SIEM Dashboard: http://localhost:3002
+---
+=== EHR ANCHOR HASH REPORT ===
+Thoi gian: 2025-12-31 10:07:56
+
+------------------------------------------------------------
+PATIENT DATA (Phat hien sua/xoa ho so)
+------------------------------------------------------------
+So benh nhan: 
+Patient Hash: 
+
+Neu hash nay KHAC voi lan truoc -> DATA TAMPERING!
+
+------------------------------------------------------------
+ACCESS LOGS (Phat hien xoa dau vet)
+------------------------------------------------------------
+Tong so dong: 
+Dong log cu nhat: 
+
+Neu so dong GIAM hoac dong cu nhat thay doi -> LOG BI XOA!
+
+------------------------------------------------------------
+SECURITY STATUS
+------------------------------------------------------------
+General Log: OFF - WARNING!
+Alerts chua xu ly: 
+IP bi block: 
+
+------------------------------------------------------------
+HUONG DAN
+------------------------------------------------------------
+1. Luu email nay de so sanh voi lan sau
+2. Neu Patient Hash thay doi -> Kiem tra ai sua ho so
+3. Neu so dong log giam -> Kiem tra ai xoa log
+4. Neu General Log = OFF -> Kiem tra SIEM Dashboard
+
+SIEM Dashboard: http://localhost:3002
+---
+=== EHR ANCHOR HASH REPORT ===
+Thoi gian: 2025-12-31 11:07:56
+
+------------------------------------------------------------
+PATIENT DATA (Phat hien sua/xoa ho so)
+------------------------------------------------------------
+So benh nhan: 
+Patient Hash: 
+
+Neu hash nay KHAC voi lan truoc -> DATA TAMPERING!
+
+------------------------------------------------------------
+ACCESS LOGS (Phat hien xoa dau vet)
+------------------------------------------------------------
+Tong so dong: 
+Dong log cu nhat: 
+
+Neu so dong GIAM hoac dong cu nhat thay doi -> LOG BI XOA!
+
+------------------------------------------------------------
+SECURITY STATUS
+------------------------------------------------------------
+General Log: OFF - WARNING!
+Alerts chua xu ly: 
+IP bi block: 
+
+------------------------------------------------------------
+HUONG DAN
+------------------------------------------------------------
+1. Luu email nay de so sanh voi lan sau
+2. Neu Patient Hash thay doi -> Kiem tra ai sua ho so
+3. Neu so dong log giam -> Kiem tra ai xoa log
+4. Neu General Log = OFF -> Kiem tra SIEM Dashboard
+
+SIEM Dashboard: http://localhost:3002
+---
+=== EHR ANCHOR HASH REPORT ===
+Thoi gian: 2025-12-31 12:07:56
+
+------------------------------------------------------------
+PATIENT DATA (Phat hien sua/xoa ho so)
+------------------------------------------------------------
+So benh nhan: 
+Patient Hash: 
+
+Neu hash nay KHAC voi lan truoc -> DATA TAMPERING!
+
+------------------------------------------------------------
+ACCESS LOGS (Phat hien xoa dau vet)
+------------------------------------------------------------
+Tong so dong: 
+Dong log cu nhat: 
+
+Neu so dong GIAM hoac dong cu nhat thay doi -> LOG BI XOA!
+
+------------------------------------------------------------
+SECURITY STATUS
+------------------------------------------------------------
+General Log: OFF - WARNING!
+Alerts chua xu ly: 
+IP bi block: 
+
+------------------------------------------------------------
+HUONG DAN
+------------------------------------------------------------
+1. Luu email nay de so sanh voi lan sau
+2. Neu Patient Hash thay doi -> Kiem tra ai sua ho so
+3. Neu so dong log giam -> Kiem tra ai xoa log
+4. Neu General Log = OFF -> Kiem tra SIEM Dashboard
+
+SIEM Dashboard: http://localhost:3002
+---
+=== EHR ANCHOR HASH REPORT ===
+Thoi gian: 2025-12-31 13:07:56
+
+------------------------------------------------------------
+PATIENT DATA (Phat hien sua/xoa ho so)
+------------------------------------------------------------
+So benh nhan: 
+Patient Hash: 
+
+Neu hash nay KHAC voi lan truoc -> DATA TAMPERING!
+
+------------------------------------------------------------
+ACCESS LOGS (Phat hien xoa dau vet)
+------------------------------------------------------------
+Tong so dong: 
+Dong log cu nhat: 
+
+Neu so dong GIAM hoac dong cu nhat thay doi -> LOG BI XOA!
+
+------------------------------------------------------------
+SECURITY STATUS
+------------------------------------------------------------
+General Log: OFF - WARNING!
+Alerts chua xu ly: 
+IP bi block: 
+
+------------------------------------------------------------
+HUONG DAN
+------------------------------------------------------------
+1. Luu email nay de so sanh voi lan sau
+2. Neu Patient Hash thay doi -> Kiem tra ai sua ho so
+3. Neu so dong log giam -> Kiem tra ai xoa log
+4. Neu General Log = OFF -> Kiem tra SIEM Dashboard
+
+SIEM Dashboard: http://localhost:3002
+---
+=== EHR ANCHOR HASH REPORT ===
+Thoi gian: 2025-12-31 14:07:56
+
+------------------------------------------------------------
+PATIENT DATA (Phat hien sua/xoa ho so)
+------------------------------------------------------------
+So benh nhan: 
+Patient Hash: 
+
+Neu hash nay KHAC voi lan truoc -> DATA TAMPERING!
+
+------------------------------------------------------------
+ACCESS LOGS (Phat hien xoa dau vet)
+------------------------------------------------------------
+Tong so dong: 
+Dong log cu nhat: 
+
+Neu so dong GIAM hoac dong cu nhat thay doi -> LOG BI XOA!
+
+------------------------------------------------------------
+SECURITY STATUS
+------------------------------------------------------------
+General Log: OFF - WARNING!
+Alerts chua xu ly: 
+IP bi block: 
+
+------------------------------------------------------------
+HUONG DAN
+------------------------------------------------------------
+1. Luu email nay de so sanh voi lan sau
+2. Neu Patient Hash thay doi -> Kiem tra ai sua ho so
+3. Neu so dong log giam -> Kiem tra ai xoa log
+4. Neu General Log = OFF -> Kiem tra SIEM Dashboard
+
+SIEM Dashboard: http://localhost:3002
+---
+=== EHR ANCHOR HASH REPORT ===
+Thoi gian: 2025-12-31 15:07:56
+
+------------------------------------------------------------
+PATIENT DATA (Phat hien sua/xoa ho so)
+------------------------------------------------------------
+So benh nhan: 
+Patient Hash: 
+
+Neu hash nay KHAC voi lan truoc -> DATA TAMPERING!
+
+------------------------------------------------------------
+ACCESS LOGS (Phat hien xoa dau vet)
+------------------------------------------------------------
+Tong so dong: 
+Dong log cu nhat: 
+
+Neu so dong GIAM hoac dong cu nhat thay doi -> LOG BI XOA!
+
+------------------------------------------------------------
+SECURITY STATUS
+------------------------------------------------------------
+General Log: OFF - WARNING!
+Alerts chua xu ly: 
+IP bi block: 
+
+------------------------------------------------------------
+HUONG DAN
+------------------------------------------------------------
+1. Luu email nay de so sanh voi lan sau
+2. Neu Patient Hash thay doi -> Kiem tra ai sua ho so
+3. Neu so dong log giam -> Kiem tra ai xoa log
+4. Neu General Log = OFF -> Kiem tra SIEM Dashboard
+
+SIEM Dashboard: http://localhost:3002
+---
+=== EHR ANCHOR HASH REPORT ===
+Thoi gian: 2025-12-31 16:07:57
+
+------------------------------------------------------------
+PATIENT DATA (Phat hien sua/xoa ho so)
+------------------------------------------------------------
+So benh nhan: 9
+Patient Hash: dc97632a26327a4b49d5ac1013287276
+
+Neu hash nay KHAC voi lan truoc -> DATA TAMPERING!
+
+------------------------------------------------------------
+ACCESS LOGS (Phat hien xoa dau vet)
+------------------------------------------------------------
+Tong so dong: 3646
+Dong log cu nhat: 2025-12-21 12:04:38
+
+Neu so dong GIAM hoac dong cu nhat thay doi -> LOG BI XOA!
+
+------------------------------------------------------------
+SECURITY STATUS
+------------------------------------------------------------
+General Log: ON
+Alerts chua xu ly: 3
+IP bi block: 0
+
+------------------------------------------------------------
+HUONG DAN
+------------------------------------------------------------
+1. Luu email nay de so sanh voi lan sau
+2. Neu Patient Hash thay doi -> Kiem tra ai sua ho so
+3. Neu so dong log giam -> Kiem tra ai xoa log
+4. Neu General Log = OFF -> Kiem tra SIEM Dashboard
+
+SIEM Dashboard: http://localhost:3002
+---
+=== EHR ANCHOR HASH REPORT ===
+Thoi gian: 2025-12-31 17:07:57
+
+------------------------------------------------------------
+PATIENT DATA (Phat hien sua/xoa ho so)
+------------------------------------------------------------
+So benh nhan: 9
+Patient Hash: dc97632a26327a4b49d5ac1013287276
+
+Neu hash nay KHAC voi lan truoc -> DATA TAMPERING!
+
+------------------------------------------------------------
+ACCESS LOGS (Phat hien xoa dau vet)
+------------------------------------------------------------
+Tong so dong: 3694
+Dong log cu nhat: 2025-12-21 12:04:38
+
+Neu so dong GIAM hoac dong cu nhat thay doi -> LOG BI XOA!
+
+------------------------------------------------------------
+SECURITY STATUS
+------------------------------------------------------------
+General Log: ON
+Alerts chua xu ly: 3
+IP bi block: 0
+
+------------------------------------------------------------
+HUONG DAN
+------------------------------------------------------------
+1. Luu email nay de so sanh voi lan sau
+2. Neu Patient Hash thay doi -> Kiem tra ai sua ho so
+3. Neu so dong log giam -> Kiem tra ai xoa log
+4. Neu General Log = OFF -> Kiem tra SIEM Dashboard
+
+SIEM Dashboard: http://localhost:3002
+---
+=== EHR ANCHOR HASH REPORT ===
+Thoi gian: 2025-12-31 18:07:57
+
+------------------------------------------------------------
+PATIENT DATA (Phat hien sua/xoa ho so)
+------------------------------------------------------------
+So benh nhan: 9
+Patient Hash: dc97632a26327a4b49d5ac1013287276
+
+Neu hash nay KHAC voi lan truoc -> DATA TAMPERING!
+
+------------------------------------------------------------
+ACCESS LOGS (Phat hien xoa dau vet)
+------------------------------------------------------------
+Tong so dong: 3742
+Dong log cu nhat: 2025-12-21 12:04:38
+
+Neu so dong GIAM hoac dong cu nhat thay doi -> LOG BI XOA!
+
+------------------------------------------------------------
+SECURITY STATUS
+------------------------------------------------------------
+General Log: ON
+Alerts chua xu ly: 3
+IP bi block: 0
+
+------------------------------------------------------------
+HUONG DAN
+------------------------------------------------------------
+1. Luu email nay de so sanh voi lan sau
+2. Neu Patient Hash thay doi -> Kiem tra ai sua ho so
+3. Neu so dong log giam -> Kiem tra ai xoa log
+4. Neu General Log = OFF -> Kiem tra SIEM Dashboard
+
+SIEM Dashboard: http://localhost:3002
+---
+=== EHR ANCHOR HASH REPORT ===
+Thoi gian: 2026-01-01 10:07:56
+
+------------------------------------------------------------
+PATIENT DATA (Phat hien sua/xoa ho so)
+------------------------------------------------------------
+So benh nhan: 
+Patient Hash: 
+
+Neu hash nay KHAC voi lan truoc -> DATA TAMPERING!
+
+------------------------------------------------------------
+ACCESS LOGS (Phat hien xoa dau vet)
+------------------------------------------------------------
+Tong so dong: 
+Dong log cu nhat: 
+
+Neu so dong GIAM hoac dong cu nhat thay doi -> LOG BI XOA!
+
+------------------------------------------------------------
+SECURITY STATUS
+------------------------------------------------------------
+General Log: OFF - WARNING!
+Alerts chua xu ly: 
+IP bi block: 
+
+------------------------------------------------------------
+HUONG DAN
+------------------------------------------------------------
+1. Luu email nay de so sanh voi lan sau
+2. Neu Patient Hash thay doi -> Kiem tra ai sua ho so
+3. Neu so dong log giam -> Kiem tra ai xoa log
+4. Neu General Log = OFF -> Kiem tra SIEM Dashboard
+
+SIEM Dashboard: http://localhost:3002
+---
+=== EHR ANCHOR HASH REPORT ===
+Thoi gian: 2026-01-01 11:07:56
+
+------------------------------------------------------------
+PATIENT DATA (Phat hien sua/xoa ho so)
+------------------------------------------------------------
+So benh nhan: 
+Patient Hash: 
+
+Neu hash nay KHAC voi lan truoc -> DATA TAMPERING!
+
+------------------------------------------------------------
+ACCESS LOGS (Phat hien xoa dau vet)
+------------------------------------------------------------
+Tong so dong: 
+Dong log cu nhat: 
+
+Neu so dong GIAM hoac dong cu nhat thay doi -> LOG BI XOA!
+
+------------------------------------------------------------
+SECURITY STATUS
+------------------------------------------------------------
+General Log: OFF - WARNING!
+Alerts chua xu ly: 
+IP bi block: 
+
+------------------------------------------------------------
+HUONG DAN
+------------------------------------------------------------
+1. Luu email nay de so sanh voi lan sau
+2. Neu Patient Hash thay doi -> Kiem tra ai sua ho so
+3. Neu so dong log giam -> Kiem tra ai xoa log
+4. Neu General Log = OFF -> Kiem tra SIEM Dashboard
+
+SIEM Dashboard: http://localhost:3002
+---
+=== EHR ANCHOR HASH REPORT ===
+Thoi gian: 2026-01-01 12:07:56
+
+------------------------------------------------------------
+PATIENT DATA (Phat hien sua/xoa ho so)
+------------------------------------------------------------
+So benh nhan: 
+Patient Hash: 
+
+Neu hash nay KHAC voi lan truoc -> DATA TAMPERING!
+
+------------------------------------------------------------
+ACCESS LOGS (Phat hien xoa dau vet)
+------------------------------------------------------------
+Tong so dong: 
+Dong log cu nhat: 
+
+Neu so dong GIAM hoac dong cu nhat thay doi -> LOG BI XOA!
+
+------------------------------------------------------------
+SECURITY STATUS
+------------------------------------------------------------
+General Log: OFF - WARNING!
+Alerts chua xu ly: 
+IP bi block: 
+
+------------------------------------------------------------
+HUONG DAN
+------------------------------------------------------------
+1. Luu email nay de so sanh voi lan sau
+2. Neu Patient Hash thay doi -> Kiem tra ai sua ho so
+3. Neu so dong log giam -> Kiem tra ai xoa log
+4. Neu General Log = OFF -> Kiem tra SIEM Dashboard
+
+SIEM Dashboard: http://localhost:3002
+---
+=== EHR ANCHOR HASH REPORT ===
+Thoi gian: 2026-01-01 13:07:56
+
+------------------------------------------------------------
+PATIENT DATA (Phat hien sua/xoa ho so)
+------------------------------------------------------------
+So benh nhan: 
+Patient Hash: 
+
+Neu hash nay KHAC voi lan truoc -> DATA TAMPERING!
+
+------------------------------------------------------------
+ACCESS LOGS (Phat hien xoa dau vet)
+------------------------------------------------------------
+Tong so dong: 
+Dong log cu nhat: 
+
+Neu so dong GIAM hoac dong cu nhat thay doi -> LOG BI XOA!
+
+------------------------------------------------------------
+SECURITY STATUS
+------------------------------------------------------------
+General Log: OFF - WARNING!
+Alerts chua xu ly: 
+IP bi block: 
+
+------------------------------------------------------------
+HUONG DAN
+------------------------------------------------------------
+1. Luu email nay de so sanh voi lan sau
+2. Neu Patient Hash thay doi -> Kiem tra ai sua ho so
+3. Neu so dong log giam -> Kiem tra ai xoa log
+4. Neu General Log = OFF -> Kiem tra SIEM Dashboard
+
+SIEM Dashboard: http://localhost:3002
+---
+=== EHR ANCHOR HASH REPORT ===
+Thoi gian: 2026-01-01 14:07:56
+
+------------------------------------------------------------
+PATIENT DATA (Phat hien sua/xoa ho so)
+------------------------------------------------------------
+So benh nhan: 
+Patient Hash: 
+
+Neu hash nay KHAC voi lan truoc -> DATA TAMPERING!
+
+------------------------------------------------------------
+ACCESS LOGS (Phat hien xoa dau vet)
+------------------------------------------------------------
+Tong so dong: 
+Dong log cu nhat: 
+
+Neu so dong GIAM hoac dong cu nhat thay doi -> LOG BI XOA!
+
+------------------------------------------------------------
+SECURITY STATUS
+------------------------------------------------------------
+General Log: OFF - WARNING!
+Alerts chua xu ly: 
+IP bi block: 
+
+------------------------------------------------------------
+HUONG DAN
+------------------------------------------------------------
+1. Luu email nay de so sanh voi lan sau
+2. Neu Patient Hash thay doi -> Kiem tra ai sua ho so
+3. Neu so dong log giam -> Kiem tra ai xoa log
+4. Neu General Log = OFF -> Kiem tra SIEM Dashboard
+
+SIEM Dashboard: http://localhost:3002
+---
+=== EHR ANCHOR HASH REPORT ===
+Thoi gian: 2026-01-02 09:07:56
+
+------------------------------------------------------------
+PATIENT DATA (Phat hien sua/xoa ho so)
+------------------------------------------------------------
+So benh nhan: 
+Patient Hash: 
+
+Neu hash nay KHAC voi lan truoc -> DATA TAMPERING!
+
+------------------------------------------------------------
+ACCESS LOGS (Phat hien xoa dau vet)
+------------------------------------------------------------
+Tong so dong: 
+Dong log cu nhat: 
+
+Neu so dong GIAM hoac dong cu nhat thay doi -> LOG BI XOA!
+
+------------------------------------------------------------
+SECURITY STATUS
+------------------------------------------------------------
+General Log: OFF - WARNING!
+Alerts chua xu ly: 
+IP bi block: 
+
+------------------------------------------------------------
+HUONG DAN
+------------------------------------------------------------
+1. Luu email nay de so sanh voi lan sau
+2. Neu Patient Hash thay doi -> Kiem tra ai sua ho so
+3. Neu so dong log giam -> Kiem tra ai xoa log
+4. Neu General Log = OFF -> Kiem tra SIEM Dashboard
+
+SIEM Dashboard: http://localhost:3002
+---
+=== EHR ANCHOR HASH REPORT ===
+Thoi gian: 2026-01-02 10:07:56
+
+------------------------------------------------------------
+PATIENT DATA (Phat hien sua/xoa ho so)
+------------------------------------------------------------
+So benh nhan: 
+Patient Hash: 
+
+Neu hash nay KHAC voi lan truoc -> DATA TAMPERING!
+
+------------------------------------------------------------
+ACCESS LOGS (Phat hien xoa dau vet)
+------------------------------------------------------------
+Tong so dong: 
+Dong log cu nhat: 
+
+Neu so dong GIAM hoac dong cu nhat thay doi -> LOG BI XOA!
+
+------------------------------------------------------------
+SECURITY STATUS
+------------------------------------------------------------
+General Log: OFF - WARNING!
+Alerts chua xu ly: 
+IP bi block: 
+
+------------------------------------------------------------
+HUONG DAN
+------------------------------------------------------------
+1. Luu email nay de so sanh voi lan sau
+2. Neu Patient Hash thay doi -> Kiem tra ai sua ho so
+3. Neu so dong log giam -> Kiem tra ai xoa log
+4. Neu General Log = OFF -> Kiem tra SIEM Dashboard
+
+SIEM Dashboard: http://localhost:3002
+---
+=== EHR ANCHOR HASH REPORT ===
+Thoi gian: 2026-01-02 11:07:56
+
+------------------------------------------------------------
+PATIENT DATA (Phat hien sua/xoa ho so)
+------------------------------------------------------------
+So benh nhan: 
+Patient Hash: 
+
+Neu hash nay KHAC voi lan truoc -> DATA TAMPERING!
+
+------------------------------------------------------------
+ACCESS LOGS (Phat hien xoa dau vet)
+------------------------------------------------------------
+Tong so dong: 
+Dong log cu nhat: 
+
+Neu so dong GIAM hoac dong cu nhat thay doi -> LOG BI XOA!
+
+------------------------------------------------------------
+SECURITY STATUS
+------------------------------------------------------------
+General Log: OFF - WARNING!
+Alerts chua xu ly: 
+IP bi block: 
+
+------------------------------------------------------------
+HUONG DAN
+------------------------------------------------------------
+1. Luu email nay de so sanh voi lan sau
+2. Neu Patient Hash thay doi -> Kiem tra ai sua ho so
+3. Neu so dong log giam -> Kiem tra ai xoa log
+4. Neu General Log = OFF -> Kiem tra SIEM Dashboard
+
+SIEM Dashboard: http://localhost:3002
+---
+=== EHR ANCHOR HASH REPORT ===
+Thoi gian: 2026-01-02 12:07:56
+
+------------------------------------------------------------
+PATIENT DATA (Phat hien sua/xoa ho so)
+------------------------------------------------------------
+So benh nhan: 
+Patient Hash: 
+
+Neu hash nay KHAC voi lan truoc -> DATA TAMPERING!
+
+------------------------------------------------------------
+ACCESS LOGS (Phat hien xoa dau vet)
+------------------------------------------------------------
+Tong so dong: 
+Dong log cu nhat: 
+
+Neu so dong GIAM hoac dong cu nhat thay doi -> LOG BI XOA!
+
+------------------------------------------------------------
+SECURITY STATUS
+------------------------------------------------------------
+General Log: OFF - WARNING!
+Alerts chua xu ly: 
+IP bi block: 
+
+------------------------------------------------------------
+HUONG DAN
+------------------------------------------------------------
+1. Luu email nay de so sanh voi lan sau
+2. Neu Patient Hash thay doi -> Kiem tra ai sua ho so
+3. Neu so dong log giam -> Kiem tra ai xoa log
+4. Neu General Log = OFF -> Kiem tra SIEM Dashboard
+
+SIEM Dashboard: http://localhost:3002
+---
+=== EHR ANCHOR HASH REPORT ===
+Thoi gian: 2026-01-02 13:07:56
+
+------------------------------------------------------------
+PATIENT DATA (Phat hien sua/xoa ho so)
+------------------------------------------------------------
+So benh nhan: 
+Patient Hash: 
+
+Neu hash nay KHAC voi lan truoc -> DATA TAMPERING!
+
+------------------------------------------------------------
+ACCESS LOGS (Phat hien xoa dau vet)
+------------------------------------------------------------
+Tong so dong: 
+Dong log cu nhat: 
+
+Neu so dong GIAM hoac dong cu nhat thay doi -> LOG BI XOA!
+
+------------------------------------------------------------
+SECURITY STATUS
+------------------------------------------------------------
+General Log: OFF - WARNING!
+Alerts chua xu ly: 
+IP bi block: 
+
+------------------------------------------------------------
+HUONG DAN
+------------------------------------------------------------
+1. Luu email nay de so sanh voi lan sau
+2. Neu Patient Hash thay doi -> Kiem tra ai sua ho so
+3. Neu so dong log giam -> Kiem tra ai xoa log
+4. Neu General Log = OFF -> Kiem tra SIEM Dashboard
+
+SIEM Dashboard: http://localhost:3002
+---
+=== EHR ANCHOR HASH REPORT ===
+Thoi gian: 2026-01-02 14:07:56
+
+------------------------------------------------------------
+PATIENT DATA (Phat hien sua/xoa ho so)
+------------------------------------------------------------
+So benh nhan: 
+Patient Hash: 
+
+Neu hash nay KHAC voi lan truoc -> DATA TAMPERING!
+
+------------------------------------------------------------
+ACCESS LOGS (Phat hien xoa dau vet)
+------------------------------------------------------------
+Tong so dong: 
+Dong log cu nhat: 
+
+Neu so dong GIAM hoac dong cu nhat thay doi -> LOG BI XOA!
+
+------------------------------------------------------------
+SECURITY STATUS
+------------------------------------------------------------
+General Log: OFF - WARNING!
+Alerts chua xu ly: 
+IP bi block: 
+
+------------------------------------------------------------
+HUONG DAN
+------------------------------------------------------------
+1. Luu email nay de so sanh voi lan sau
+2. Neu Patient Hash thay doi -> Kiem tra ai sua ho so
+3. Neu so dong log giam -> Kiem tra ai xoa log
+4. Neu General Log = OFF -> Kiem tra SIEM Dashboard
+
+SIEM Dashboard: http://localhost:3002
+---
+=== EHR ANCHOR HASH REPORT ===
+Thoi gian: 2026-01-02 15:07:56
+
+------------------------------------------------------------
+PATIENT DATA (Phat hien sua/xoa ho so)
+------------------------------------------------------------
+So benh nhan: 
+Patient Hash: 
+
+Neu hash nay KHAC voi lan truoc -> DATA TAMPERING!
+
+------------------------------------------------------------
+ACCESS LOGS (Phat hien xoa dau vet)
+------------------------------------------------------------
+Tong so dong: 
+Dong log cu nhat: 
+
+Neu so dong GIAM hoac dong cu nhat thay doi -> LOG BI XOA!
+
+------------------------------------------------------------
+SECURITY STATUS
+------------------------------------------------------------
+General Log: OFF - WARNING!
+Alerts chua xu ly: 
+IP bi block: 
+
+------------------------------------------------------------
+HUONG DAN
+------------------------------------------------------------
+1. Luu email nay de so sanh voi lan sau
+2. Neu Patient Hash thay doi -> Kiem tra ai sua ho so
+3. Neu so dong log giam -> Kiem tra ai xoa log
+4. Neu General Log = OFF -> Kiem tra SIEM Dashboard
+
+SIEM Dashboard: http://localhost:3002
+---
+=== EHR ANCHOR HASH REPORT ===
+Thoi gian: 2026-01-02 16:07:56
+
+------------------------------------------------------------
+PATIENT DATA (Phat hien sua/xoa ho so)
+------------------------------------------------------------
+So benh nhan: 
+Patient Hash: 
+
+Neu hash nay KHAC voi lan truoc -> DATA TAMPERING!
+
+------------------------------------------------------------
+ACCESS LOGS (Phat hien xoa dau vet)
+------------------------------------------------------------
+Tong so dong: 
+Dong log cu nhat: 
+
+Neu so dong GIAM hoac dong cu nhat thay doi -> LOG BI XOA!
+
+------------------------------------------------------------
+SECURITY STATUS
+------------------------------------------------------------
+General Log: OFF - WARNING!
+Alerts chua xu ly: 
+IP bi block: 
+
+------------------------------------------------------------
+HUONG DAN
+------------------------------------------------------------
+1. Luu email nay de so sanh voi lan sau
+2. Neu Patient Hash thay doi -> Kiem tra ai sua ho so
+3. Neu so dong log giam -> Kiem tra ai xoa log
+4. Neu General Log = OFF -> Kiem tra SIEM Dashboard
+
+SIEM Dashboard: http://localhost:3002
+---
+=== EHR ANCHOR HASH REPORT ===
+Thoi gian: 2026-01-02 17:07:56
+
+------------------------------------------------------------
+PATIENT DATA (Phat hien sua/xoa ho so)
+------------------------------------------------------------
+So benh nhan: 
+Patient Hash: 
+
+Neu hash nay KHAC voi lan truoc -> DATA TAMPERING!
+
+------------------------------------------------------------
+ACCESS LOGS (Phat hien xoa dau vet)
+------------------------------------------------------------
+Tong so dong: 
+Dong log cu nhat: 
+
+Neu so dong GIAM hoac dong cu nhat thay doi -> LOG BI XOA!
+
+------------------------------------------------------------
+SECURITY STATUS
+------------------------------------------------------------
+General Log: OFF - WARNING!
+Alerts chua xu ly: 
+IP bi block: 
+
+------------------------------------------------------------
+HUONG DAN
+------------------------------------------------------------
+1. Luu email nay de so sanh voi lan sau
+2. Neu Patient Hash thay doi -> Kiem tra ai sua ho so
+3. Neu so dong log giam -> Kiem tra ai xoa log
+4. Neu General Log = OFF -> Kiem tra SIEM Dashboard
+
+SIEM Dashboard: http://localhost:3002
+---

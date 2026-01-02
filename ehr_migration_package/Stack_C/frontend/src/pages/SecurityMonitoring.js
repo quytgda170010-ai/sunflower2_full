@@ -103,8 +103,8 @@ function SecurityMonitoring({ initialMode = 'logs' }) {
   const [behaviorUserFilter, setBehaviorUserFilter] = useState('all'); // Filter by specific user
   const [behaviorComplianceType, setBehaviorComplianceType] = useState('all'); // 'all', 'user', 'system' - phân loại giám sát user vs system
   // Date range filter - for logs view: default 24 hours for better performance, for behavior view: default 24 hours
-  const [fromDate, setFromDate] = useState(dayjs().year(2025).subtract(1, 'day')); // Forced 2025 for debug
-  const [toDate, setToDate] = useState(dayjs().year(2025)); // Forced 2025 for debug
+  const [fromDate, setFromDate] = useState(dayjs().subtract(1, 'day')); // Default to yesterday
+  const [toDate, setToDate] = useState(dayjs()); // Default to today
   const [userSummaryData, setUserSummaryData] = useState([]);
   const [loadingUserSummary, setLoadingUserSummary] = useState(false);
   const [showUserSummaryTable, setShowUserSummaryTable] = useState(true); // Show by default
@@ -3428,7 +3428,7 @@ function SecurityMonitoring({ initialMode = 'logs' }) {
                 size="small"
                 variant={fromDate && toDate && dayjs(fromDate).isSame(dayjs(toDate), 'day') && dayjs(fromDate).isSame(dayjs(), 'day') ? 'contained' : 'outlined'}
                 onClick={() => {
-                  const today = dayjs().year(2025);
+                  const today = dayjs();
                   setFromDate(today);
                   setToDate(today);
                   setPage(0);
@@ -3441,7 +3441,7 @@ function SecurityMonitoring({ initialMode = 'logs' }) {
                 size="small"
                 variant={fromDate && toDate && dayjs(fromDate).isSame(dayjs().subtract(7, 'day'), 'day') && dayjs(toDate).isSame(dayjs(), 'day') ? 'contained' : 'outlined'}
                 onClick={() => {
-                  const today = dayjs().year(2025);
+                  const today = dayjs();
                   setFromDate(today.subtract(7, 'day'));
                   setToDate(today);
                   setPage(0);
@@ -3454,7 +3454,7 @@ function SecurityMonitoring({ initialMode = 'logs' }) {
                 size="small"
                 variant={fromDate && toDate && dayjs(fromDate).isSame(dayjs().subtract(30, 'day'), 'day') && dayjs(toDate).isSame(dayjs(), 'day') ? 'contained' : 'outlined'}
                 onClick={() => {
-                  const today = dayjs().year(2025);
+                  const today = dayjs();
                   setFromDate(today.subtract(30, 'day'));
                   setToDate(today);
                   setPage(0);
