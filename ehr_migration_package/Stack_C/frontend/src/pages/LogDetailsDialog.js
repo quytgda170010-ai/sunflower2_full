@@ -2454,9 +2454,23 @@ export default function LogDetailsDialog({
                                         <TableCell sx={{ fontWeight: 600, bgcolor: '#f5f5f5' }}>Nguồn IP</TableCell>
                                         <TableCell sx={{ fontFamily: 'monospace' }}>
                                             {(() => {
-                                                const ip = selectedLog.source_ip || selectedLog.ip_address || selectedLog.client_ip ||
-                                                    (parseJsonSafe(selectedLog.details) || {}).ip_address ||
-                                                    (parseJsonSafe(selectedLog.details) || {}).source_ip || 'N/A';
+                                                const details = parseJsonSafe(selectedLog.details) || {};
+                                                // Check multiple possible IP fields
+                                                const ip = selectedLog.source_ip ||
+                                                    selectedLog.ip_address ||
+                                                    selectedLog.client_ip ||
+                                                    selectedLog.remote_addr ||
+                                                    selectedLog.x_forwarded_for ||
+                                                    details.ip_address ||
+                                                    details.source_ip ||
+                                                    details.client_ip ||
+                                                    details.remote_addr ||
+                                                    details.x_forwarded_for ||
+                                                    details.ipAddress ||
+                                                    // Check nested fields
+                                                    (details.request || {}).ip ||
+                                                    (details.client || {}).ip ||
+                                                    'Không xác định';
                                                 // Only show first IP if multiple (comma-separated)
                                                 return ip.split(',')[0].trim();
                                             })()}
@@ -2487,7 +2501,25 @@ export default function LogDetailsDialog({
                                     const action = (selectedLog.action || '').toLowerCase();
                                     const status = parseInt(selectedLog.status) || 200;
                                     const isSuccess = status >= 200 && status < 300;
-                                    const hasViolation = violatedRules && violatedRules.length > 0 && violatedRules.some(r => r.has_violation !== false);
+
+                                    // FIX: Use same logic as header (getLogInfo) for consistency
+                                    // Check directly from selectedLog, not from violatedRules array which may be misleading
+                                    const isExplicitlyCompliant =
+                                        selectedLog.has_violation === false ||
+                                        selectedLog.has_violation === 'false' ||
+                                        selectedLog.has_violation === 0 ||
+                                        selectedLog.severity === 'compliant' ||
+                                        selectedLog.compliance_status === 'compliant' ||
+                                        (selectedLog.id || '').includes('::ok');
+
+                                    const isExplicitlyViolation =
+                                        selectedLog.has_violation === true ||
+                                        selectedLog.has_violation === 'true' ||
+                                        selectedLog.has_violation === 1 ||
+                                        selectedLog.ground_truth_label === 1 ||
+                                        selectedLog.failed_rules > 0;
+
+                                    const hasViolation = isExplicitlyViolation && !isExplicitlyCompliant;
 
                                     // Get matched rule info from selectedLog or violatedRules
                                     const matchedRule = violatedRules && violatedRules.length > 0 ? violatedRules[0] : null;
@@ -2552,8 +2584,8 @@ export default function LogDetailsDialog({
                                     const finalPenaltyLevel = penaltyLevel || defaultCompliance.penaltyLevel;
                                     const finalLawUrl = lawUrl || defaultCompliance.lawUrl;
 
-                                    // Determine compliance status
-                                    const isCompliant = isSuccess && !hasViolation;
+                                    // Determine compliance status - prioritize explicit flags
+                                    const isCompliant = isExplicitlyCompliant || (isSuccess && !hasViolation);
 
                                     return (
                                         <Card
@@ -2697,7 +2729,20 @@ export default function LogDetailsDialog({
                                     </TableRow>
                                     <TableRow>
                                         <TableCell sx={{ fontWeight: 600, bgcolor: '#f5f5f5' }}>IP Address</TableCell>
-                                        <TableCell sx={{ fontFamily: 'monospace' }}>{selectedLog.ip_address || selectedLog.source_ip || 'N/A'}</TableCell>
+                                        <TableCell sx={{ fontFamily: 'monospace' }}>
+                                            {(() => {
+                                                const details = parseJsonSafe(selectedLog.details) || {};
+                                                const ip = selectedLog.ip_address ||
+                                                    selectedLog.source_ip ||
+                                                    selectedLog.client_ip ||
+                                                    selectedLog.remote_addr ||
+                                                    details.ip_address ||
+                                                    details.source_ip ||
+                                                    details.ipAddress ||
+                                                    'Không xác định';
+                                                return ip.split(',')[0].trim();
+                                            })()}
+                                        </TableCell>
                                     </TableRow>
                                     <TableRow>
                                         <TableCell sx={{ fontWeight: 600, bgcolor: '#f5f5f5' }}>User Agent</TableCell>

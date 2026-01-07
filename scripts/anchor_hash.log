@@ -1,0 +1,36 @@
+=== EHR ANCHOR HASH REPORT ===
+Thoi gian: 2026-01-07 12:07:56
+
+------------------------------------------------------------
+PATIENT DATA (Phat hien sua/xoa ho so)
+------------------------------------------------------------
+So benh nhan: 
+Patient Hash: 
+
+Neu hash nay KHAC voi lan truoc -> DATA TAMPERING!
+
+------------------------------------------------------------
+ACCESS LOGS (Phat hien xoa dau vet)
+------------------------------------------------------------
+Tong so dong: 
+Dong log cu nhat: 
+
+Neu so dong GIAM hoac dong cu nhat thay doi -> LOG BI XOA!
+
+------------------------------------------------------------
+SECURITY STATUS
+------------------------------------------------------------
+General Log: OFF - WARNING!
+Alerts chua xu ly: 
+IP bi block: 
+
+------------------------------------------------------------
+HUONG DAN
+------------------------------------------------------------
+1. Luu email nay de so sanh voi lan sau
+2. Neu Patient Hash thay doi -> Kiem tra ai sua ho so
+3. Neu so dong log giam -> Kiem tra ai xoa log
+4. Neu General Log = OFF -> Kiem tra SIEM Dashboard
+
+SIEM Dashboard: http://localhost:3002
+---
