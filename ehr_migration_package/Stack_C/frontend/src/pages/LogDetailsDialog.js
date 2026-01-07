@@ -2599,8 +2599,10 @@ export default function LogDetailsDialog({
                                     const finalPenaltyLevel = penaltyLevel || defaultCompliance.penaltyLevel;
                                     const finalLawUrl = lawUrl || defaultCompliance.lawUrl;
 
-                                    // Determine compliance status - prioritize explicit flags
-                                    const isCompliant = isExplicitlyCompliant || (isSuccess && !hasViolation);
+                                    // Determine compliance status - prioritize explicit flags from backend
+                                    // CRITICAL FIX: If not explicitly a violation, treat as COMPLIANT
+                                    // This prevents login failures (status 401) from showing as "VI PHẠM"
+                                    const isCompliant = isExplicitlyCompliant || !hasViolation;
 
                                     return (
                                         <Card
