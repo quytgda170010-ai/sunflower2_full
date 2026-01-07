@@ -1354,6 +1354,9 @@ class BehaviorMonitor:
                     'status': '403',  # Blocked successfully
                     'purpose': 'security_defense',
                     'uri': log.get('uri'),
+                    # IP Address: check multiple possible fields
+                    'source_ip': log.get('ip_address') or log.get('source_ip') or (details_json.get('ip_address') if details_json else None),
+                    'ip_address': log.get('ip_address') or log.get('source_ip') or (details_json.get('ip_address') if details_json else None),
                     'patient_code': None,
                     'patient_name': None,
                     'rule_code': rule.get('rule_code'),
@@ -1433,6 +1436,9 @@ class BehaviorMonitor:
                     'status': status_code,
                     'purpose': log.get('purpose'),
                     'uri': log.get('uri'),
+                    # IP Address: check multiple possible fields
+                    'source_ip': log.get('ip_address') or log.get('source_ip') or log.get('client_ip') or (details_json.get('ip_address') if details_json else None),
+                    'ip_address': log.get('ip_address') or log.get('source_ip') or log.get('client_ip') or (details_json.get('ip_address') if details_json else None),
                     'patient_code': log.get('patient_code'),
                     'patient_name': log.get('patient_name'),
                     'rule_code': rule.get('rule_code'),
@@ -1513,6 +1519,9 @@ class BehaviorMonitor:
                     'status': str(log.get('status')) if log.get('status') is not None else None,
                     'purpose': log.get('purpose'),
                     'uri': log.get('uri'),
+                    # IP Address: check multiple possible fields
+                    'source_ip': log.get('ip_address') or log.get('source_ip') or log.get('client_ip') or (details_json.get('ip_address') if details_json else None),
+                    'ip_address': log.get('ip_address') or log.get('source_ip') or log.get('client_ip') or (details_json.get('ip_address') if details_json else None),
                     'patient_code': log.get('patient_code'),
                     'patient_name': log.get('patient_name'),
                     'rule_code': rule.get('rule_code'),
@@ -1567,6 +1576,9 @@ class BehaviorMonitor:
                     'status': str(log.get('status')) if log.get('status') is not None else None,
                     'purpose': log.get('purpose'),
                     'uri': log.get('uri'),
+                    # IP Address: check multiple possible fields
+                    'source_ip': log.get('ip_address') or log.get('source_ip') or log.get('client_ip') or (self._parse_json(log.get('details')) or {}).get('ip_address'),
+                    'ip_address': log.get('ip_address') or log.get('source_ip') or log.get('client_ip') or (self._parse_json(log.get('details')) or {}).get('ip_address'),
                     'patient_code': log.get('patient_code'),
                     'patient_name': log.get('patient_name'),
                     'rule_code': rule.get('rule_code'),

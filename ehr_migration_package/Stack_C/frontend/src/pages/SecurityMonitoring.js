@@ -535,7 +535,9 @@ function SecurityMonitoring({ initialMode = 'logs' }) {
       // 4. Authentication failures (status 401, 403, 423)
       // ------------------------------------------------------------
       const ruleCode = record.rule_code || '';
-      const hasViolation = record.has_violation || record.is_group_violation;
+      // CRITICAL FIX: Only true violations, respect has_violation=false
+      const isExplicitlyCompliant = record.has_violation === false || record.severity === 'compliant';
+      const hasViolation = !isExplicitlyCompliant && (record.has_violation === true || record.is_group_violation);
       // Include all compliance rules (security, audit, RBAC, signature, consent, data, integration, incident response, governance)
       const isSecurityRule = ruleCode.startsWith('R-SEC') ||
         ruleCode.startsWith('R-IAM') ||
@@ -4583,7 +4585,16 @@ function SecurityMonitoring({ initialMode = 'logs' }) {
                       // FIX: Force Override for FIM / IDS Alerts (Auto-Heal) that are misclassified
                       // -----------------------------------------------------------
                       let ruleCode = record.rule_code;
-                      let isViolation = record.is_group_violation || record.has_violation;
+
+                      // CRITICAL FIX: Respect has_violation from backend
+                      // If has_violation is explicitly false OR severity is 'compliant', log is COMPLIANT
+                      const isExplicitlyCompliant =
+                        record.has_violation === false ||
+                        record.severity === 'compliant' ||
+                        record.compliance_status === 'compliant' ||
+                        (record.id || '').includes('::ok');
+
+                      let isViolation = !isExplicitlyCompliant && (record.is_group_violation || record.has_violation === true);
                       let isFIM = false;
 
                       try {

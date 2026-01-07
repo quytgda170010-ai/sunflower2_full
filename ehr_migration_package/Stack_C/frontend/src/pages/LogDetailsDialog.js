@@ -288,7 +288,19 @@ export default function LogDetailsDialog({
         } catch { return false; }
     }, [selectedLog]);
 
-    const isViolation = selectedLog?.ground_truth_label === 1 || selectedLog?.has_violation || selectedLog?.failed_rules > 0 || isFIM;
+    // CRITICAL FIX: Respect has_violation from backend
+    // If has_violation is explicitly false, log is COMPLIANT regardless of other fields
+    const isExplicitlyCompliant = selectedLog?.has_violation === false ||
+        selectedLog?.severity === 'compliant' ||
+        selectedLog?.compliance_status === 'compliant' ||
+        (selectedLog?.id || '').includes('::ok');
+
+    const isViolation = !isExplicitlyCompliant && (
+        selectedLog?.ground_truth_label === 1 ||
+        selectedLog?.has_violation === true ||
+        selectedLog?.failed_rules > 0 ||
+        isFIM
+    );
     const isSQLi = isSQLInjection; // Alias
     const isEMR = selectedLog?.log_type === 'EMR_ACCESS_LOG' || selectedLog?.log_type === 'emr_access_log' || selectedLog?.functional_group === 'emr';
     const isEncryption = (selectedLog?.uri || '').includes('encryption') ||
@@ -543,14 +555,17 @@ export default function LogDetailsDialog({
     // This template is used when clicking "Chi tiết" button on individual rules
     // Uses the clean layout (image 2 style) with colors based on violation status
     if (selectedLog._single_rule_view) {
-        const isViolationView = selectedLog.has_violation;
+        // CRITICAL FIX: Only show violation if has_violation is explicitly true
+        const isViolationView = selectedLog.has_violation === true && selectedLog.severity !== 'compliant';
         const ruleCode = selectedLog.rule_code || 'N/A';
         const ruleName = selectedLog.rule_name || 'N/A';
         const logDetails = parseJsonSafe(selectedLog.details) || {};
         const user = selectedLog.user || selectedLog.actor_name || logDetails.username || selectedLog.username || 'Unknown';
         // Try multiple fields for IP, only show first if comma-separated
         const rawIP = selectedLog.source_ip || selectedLog.ip_address || selectedLog.client_ip ||
-            logDetails.ip_address || logDetails.source_ip || logDetails.client_ip || 'N/A';
+            selectedLog.remote_addr || selectedLog.x_forwarded_for ||
+            logDetails.ip_address || logDetails.source_ip || logDetails.client_ip ||
+            logDetails.remote_addr || logDetails.ipAddress || 'Không xác định';
         const sourceIP = rawIP.split(',')[0].trim();
         // Try multiple fields for action
         const actionText = selectedLog.action || selectedLog.action_description ||
