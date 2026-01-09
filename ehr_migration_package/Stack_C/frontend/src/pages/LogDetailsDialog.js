@@ -2290,17 +2290,34 @@ export default function LogDetailsDialog({
             severity: selectedLog.severity,
             compliance_status: selectedLog.compliance_status,
             rule_code: selectedLog.rule_code,
+            status: status,
+            action: action,
             id: selectedLog.id
         });
 
-        // ===== PRIORITY 0: Explicitly check has_violation field FIRST =====
-        // This takes highest priority - if has_violation is explicitly false, show TUÂN THỦ
-        if (selectedLog.has_violation === false ||
+        // ===== PRIORITY -1: FORCE VIOLATION for failed statuses =====
+        // Login failures (401, 403, 423) are ALWAYS violations, regardless of has_violation field
+        const isFailureStatus = [401, 403, 423].includes(status);
+        const isFailedAction = action.includes('thất bại') || action.includes('failed') || action.includes('failure');
+
+        if (isFailureStatus || isFailedAction) {
+            const ruleCode = selectedLog.rule_code || 'R-IAM-03';
+            return {
+                title: `VI PHẠM: ${ruleCode}`,
+                icon: '🚨',
+                color: '#d32f2f',
+                bgColor: '#ffebee'
+            };
+        }
+
+        // ===== PRIORITY 0: Explicitly check has_violation field =====
+        // Only show TUÂN THỦ if has_violation is EXPLICITLY false AND status is success
+        if ((selectedLog.has_violation === false ||
             selectedLog.has_violation === 'false' ||
             selectedLog.has_violation === 0 ||
             selectedLog.severity === 'compliant' ||
             selectedLog.compliance_status === 'compliant' ||
-            (selectedLog.id || '').includes('::ok')) {
+            (selectedLog.id || '').includes('::ok')) && isSuccess) {
             // COMPLIANT LOG - GREEN
             return {
                 title: selectedLog.rule_code ? `TUÂN THỦ: ${selectedLog.rule_code}` : 'TUÂN THỦ QUY TẮC',
@@ -2309,6 +2326,7 @@ export default function LogDetailsDialog({
                 bgColor: '#e8f5e9'
             };
         }
+
 
         // PRIORITY 1: Single rule view (clicked from expanded rule list)
         if (selectedLog._single_rule_view) {
@@ -2519,6 +2537,11 @@ export default function LogDetailsDialog({
 
                                     // FIX: Use same logic as header (getLogInfo) for consistency
                                     // Check directly from selectedLog, not from violatedRules array which may be misleading
+
+                                    // PRIORITY -1: Always treat failure statuses as violations
+                                    const isFailureStatus = [401, 403, 423].includes(status);
+                                    const isFailedAction = action.includes('thất bại') || action.includes('failed') || action.includes('failure');
+
                                     const isExplicitlyCompliant =
                                         selectedLog.has_violation === false ||
                                         selectedLog.has_violation === 'false' ||
@@ -2534,7 +2557,8 @@ export default function LogDetailsDialog({
                                         selectedLog.ground_truth_label === 1 ||
                                         selectedLog.failed_rules > 0;
 
-                                    const hasViolation = isExplicitlyViolation && !isExplicitlyCompliant;
+                                    // CRITICAL FIX: Failed statuses ALWAYS count as violations
+                                    const hasViolation = isFailureStatus || isFailedAction || (isExplicitlyViolation && !isExplicitlyCompliant);
 
 
                                     // Get matched rule info from selectedLog or violatedRules
@@ -2600,10 +2624,10 @@ export default function LogDetailsDialog({
                                     const finalPenaltyLevel = penaltyLevel || defaultCompliance.penaltyLevel;
                                     const finalLawUrl = lawUrl || defaultCompliance.lawUrl;
 
-                                    // Determine compliance status - prioritize explicit flags from backend
-                                    // CRITICAL FIX: If not explicitly a violation, treat as COMPLIANT
-                                    // This prevents login failures (status 401) from showing as "VI PHẠM"
-                                    const isCompliant = isExplicitlyCompliant || !hasViolation;
+                                    // Determine compliance status
+                                    // CRITICAL FIX: If hasViolation is true (including 401 failures), show as violation
+                                    const isCompliant = !hasViolation && isSuccess;
+
 
                                     return (
                                         <Card
