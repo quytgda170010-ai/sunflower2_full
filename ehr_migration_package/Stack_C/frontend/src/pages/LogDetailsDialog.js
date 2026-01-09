@@ -2165,7 +2165,13 @@ export default function LogDetailsDialog({
                                     const action = (selectedLog.action || '').toLowerCase();
                                     const status = parseInt(selectedLog.status) || 200;
                                     const isSuccess = status >= 200 && status < 300;
-                                    const hasViolation = violatedRules && violatedRules.length > 0 && violatedRules.some(r => r.has_violation !== false);
+                                    // BUG FIX: Also check for failure statuses and failed login actions
+                                    const isFailureStatus = [401, 403, 423].includes(status);
+                                    const isFailedAction = (selectedLog.action || '').toLowerCase().includes('thất bại') ||
+                                        (selectedLog.action || '').toLowerCase().includes('failed');
+                                    const hasViolation = (violatedRules && violatedRules.length > 0 && violatedRules.some(r => r.has_violation !== false)) ||
+                                        isFailureStatus || isFailedAction || selectedLog.has_violation || selectedLog.failed_rules > 0;
+
 
                                     // Get matched rule info from selectedLog or violatedRules
                                     const matchedRule = violatedRules && violatedRules.length > 0 ? violatedRules[0] : null;
