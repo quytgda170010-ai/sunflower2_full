@@ -5,9 +5,11 @@ import os
 import tempfile
 import logging
 from .law_rules import LawRuleRepository
-from .ai.document_parser import DocumentParser
-from .ai.multi_model_extractor import MultiModelExtractor
+# AI imports - commented out as modules don't exist yet
+# from .ai.document_parser import DocumentParser
+# from .ai.multi_model_extractor import MultiModelExtractor
 from .models import LawRulesSearchResponse, DocumentImportResponse, LawRuleResponse
+
 from .security_monitor import SecurityMonitor
 from .behavior_monitor import BehaviorMonitor
 from .user_service import UserService
@@ -190,62 +192,12 @@ async def search_law_rules(
 
 @app.post("/api/law-rules/import-document", response_model=DocumentImportResponse)
 async def import_document(file: UploadFile = File(...)):
-    """Import law document and extract rules using AI"""
-    try:
-        # Save uploaded file temporarily
-        with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as tmp_file:
-            content = await file.read()
-            tmp_file.write(content)
-            tmp_path = tmp_file.name
-        
-        try:
-            # Parse document
-            parser = DocumentParser()
-            doc_data = await parser.parse_file(tmp_path)
-            text = doc_data['text']
-            
-            if not text or len(text.strip()) < 100:
-                raise HTTPException(status_code=400, detail="Document quá ngắn hoặc không có nội dung")
-            
-            # Extract rules using AI
-            extractor = MultiModelExtractor()
-            result = await extractor.extract(text)
-            
-            # Save rules to database
-            repo = LawRuleRepository()
-            created = 0
-            skipped = 0
-            
-            for rule in result['rules']:
-                try:
-                    repo.create_rule(rule)
-                    created += 1
-                except ValueError as e:
-                    # Duplicate rule code
-                    logger.warning(f"Skipped duplicate rule: {e}")
-                    skipped += 1
-                except Exception as e:
-                    logger.error(f"Error creating rule: {e}")
-                    skipped += 1
-            
-            return {
-                'success': True,
-                'message': f'Đã tạo {created} quy tắc từ văn bản',
-                'rules_created': created,
-                'rules_skipped': skipped,
-                'confidence': result['confidence'],
-                'needs_review': result['needs_review'],
-                'invalid_rules': result['validation']['invalid_rules'] if result['validation']['invalid_count'] > 0 else None
-            }
-            
-        finally:
-            # Clean up temp file
-            if os.path.exists(tmp_path):
-                os.unlink(tmp_path)
-                
-    except Exception as e:
-        logger.error(f"Import error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    """Import law document and extract rules using AI - DISABLED"""
+    raise HTTPException(
+        status_code=501, 
+        detail="AI document import is not available. Please add rules manually."
+    )
+
 
 @app.post("/api/law-rules", response_model=LawRuleResponse)
 async def create_rule(rule: LawRuleResponse):
