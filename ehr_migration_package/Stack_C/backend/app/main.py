@@ -15,6 +15,8 @@ from .keycloak_collector import KeycloakEventCollector
 from .tls_collector import TLSCollector
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.triggers.cron import CronTrigger
+from .report_service import run_daily_off_hours_report, send_test_report
 import atexit
 
 logging.basicConfig(level=logging.INFO)
@@ -101,9 +103,19 @@ scheduler.add_job(
     replace_existing=True
 )
 
+# ===== OFF-HOURS EMAIL REPORT JOB =====
+# Send email report at 6:00 AM daily with logs from 18:00-06:00
+scheduler.add_job(
+    func=run_daily_off_hours_report,
+    trigger=CronTrigger(hour=6, minute=0, timezone='Asia/Ho_Chi_Minh'),
+    id='off_hours_report',
+    name='Off-Hours Log Report Email (6AM)',
+    replace_existing=True
+)
+
 # Start scheduler
 scheduler.start()
-logger.info("APScheduler started - Keycloak (60s), TLS (300s), Behavior Cache (60s) collectors running")
+logger.info("APScheduler started - Keycloak (60s), TLS (300s), Behavior Cache (60s), Email Report (6AM daily)")
 
 # Shut down the scheduler when exiting the app
 atexit.register(lambda: scheduler.shutdown())
@@ -599,6 +611,34 @@ async def get_watchdog_alerts_count():
     except Exception as e:
         logger.error(f"Error getting alerts count: {e}")
         return {"unacknowledged": 0}
+
+# ============================================
+# Email Report Endpoints
+# ============================================
+
+@app.post("/api/report/test-email")
+async def test_email_report(data: dict = {}):
+    """Send a test email report for off-hours logs"""
+    try:
+        recipient = data.get('recipient')
+        result = send_test_report(recipient)
+        
+        if result.get('success'):
+            return {
+                "success": True,
+                "message": f"Test email sent successfully to {result.get('recipients')}",
+                "logs_count": result.get('logs_count'),
+                "violations": result.get('violations'),
+                "warnings": result.get('warnings'),
+                "time_range": result.get('time_range')
+            }
+        else:
+            raise HTTPException(status_code=500, detail=result.get('error', 'Failed to send email'))
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error sending test email: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ============================================
 # MySQL General Log Endpoints (SQL Query Monitoring)

@@ -103,8 +103,8 @@ function SecurityMonitoring({ initialMode = 'logs' }) {
   const [behaviorUserFilter, setBehaviorUserFilter] = useState('all'); // Filter by specific user
   const [behaviorComplianceType, setBehaviorComplianceType] = useState('all'); // 'all', 'user', 'system' - phân loại giám sát user vs system
   // Date range filter - for logs view: default 24 hours for better performance, for behavior view: default 24 hours
-  const [fromDate, setFromDate] = useState(dayjs().year(2025).subtract(1, 'day')); // Forced 2025 for debug
-  const [toDate, setToDate] = useState(dayjs().year(2025)); // Forced 2025 for debug
+  const [fromDate, setFromDate] = useState(dayjs().subtract(1, 'day')); // Default to yesterday
+  const [toDate, setToDate] = useState(dayjs()); // Default to today
   const [userSummaryData, setUserSummaryData] = useState([]);
   const [loadingUserSummary, setLoadingUserSummary] = useState(false);
   const [showUserSummaryTable, setShowUserSummaryTable] = useState(true); // Show by default
@@ -535,7 +535,9 @@ function SecurityMonitoring({ initialMode = 'logs' }) {
       // 4. Authentication failures (status 401, 403, 423)
       // ------------------------------------------------------------
       const ruleCode = record.rule_code || '';
-      const hasViolation = record.has_violation || record.is_group_violation;
+      // CRITICAL FIX: Only true violations, respect has_violation=false
+      const isExplicitlyCompliant = record.has_violation === false || record.severity === 'compliant';
+      const hasViolation = !isExplicitlyCompliant && (record.has_violation === true || record.is_group_violation);
       // Include all compliance rules (security, audit, RBAC, signature, consent, data, integration, incident response, governance)
       const isSecurityRule = ruleCode.startsWith('R-SEC') ||
         ruleCode.startsWith('R-IAM') ||
@@ -654,82 +656,15 @@ function SecurityMonitoring({ initialMode = 'logs' }) {
       return true;
     });
 
-    // 2. GROUPING / AGGREGATION LOGIC
-    // We want to group logs that are:
-    // - Same User
-    // - Same Time Window (e.g. 5 seconds)
-    // - Same Action/URI
-    // And allow displaying multiple rule violations for that single group.
+    // 2. GROUPING DISABLED - Show each log as individual row
+    // Previously grouped logs by user + timestamp, but this caused has_violation 
+    // from one log to overwrite all logs in the group, showing compliant logs as violations.
+    // Now each log is displayed separately to preserve its original has_violation status.
 
-    const groupedLogs = new Map();
-
-    records.forEach(r => {
-      const ts = r.timestamp ? new Date(r.timestamp).getTime() : 0;
-      const userRaw = r.user || r.user_id || r.actor_name || r.username || 'unknown';
-      const userKey = String(userRaw).toLowerCase().trim();
-
-      // AGGRESSIVE GROUPING: User + Same Minute
-      // Groups all logs from user within the same minute into one row
-      const dateObj = new Date(ts);
-      dateObj.setSeconds(0, 0);
-      const timestampKey = dateObj.toISOString();
-      const key = `${userKey}|${timestampKey}`;
-
-      if (!groupedLogs.has(key)) {
-        groupedLogs.set(key, {
-          ...r,
-          related_rules: [], // Store ALL rules for this user/timestamp
-          grouped_count: 0,
-          is_group_violation: false,
-          earliest_timestamp: ts,
-          latest_timestamp: ts
-        });
-      }
-
-      const groupLeader = groupedLogs.get(key);
-      groupLeader.grouped_count += 1;
-
-      // Track time range
-      if (ts < groupLeader.earliest_timestamp) groupLeader.earliest_timestamp = ts;
-      if (ts > groupLeader.latest_timestamp) groupLeader.latest_timestamp = ts;
-
-      // Logic to merge rule info
-      // If the current record has a violation, we want to ensure the group leader reflects that.
-      const isViolation = r.log_type === 'SECURITY_ALERT' || r.ground_truth_label === 1 || r.has_violation;
-      if (isViolation) {
-        groupLeader.is_group_violation = true;
-        // If group leader wasn't a violation but this one is, upgrade the leader
-        if (!groupLeader.has_violation && !groupLeader.log_type !== 'SECURITY_ALERT') {
-          // Copy violation details to leader
-          Object.assign(groupLeader, {
-            log_type: r.log_type,
-            rule_code: r.rule_code,
-            rule_name: r.rule_name,
-            violation_severity: r.violation_severity,
-            has_violation: true,
-            riskScore: Math.max(groupLeader.riskScore || 0, r.riskScore || 0)
-          });
-        }
-      }
-
-      // Add to related rules if it's a distinct rule code
-      if (r.rule_code && !groupLeader.related_rules.find(rr => rr.rule_code === r.rule_code)) {
-        groupLeader.related_rules.push({
-          rule_code: r.rule_code,
-          rule_name: r.rule_name,
-          violation_type: r.violation_type,
-          severity: r.violation_severity || r.severity,
-          log_id: r.id,
-          timestamp: r.timestamp,
-          has_violation: isViolation
-        });
-      }
-    });
-
-    // Convert grouped logs to array and sort
-    const sortedLogs = Array.from(groupedLogs.values()).sort((a, b) => {
-      const tA = new Date(a.latest_timestamp || a.timestamp).getTime();
-      const tB = new Date(b.latest_timestamp || b.timestamp).getTime();
+    // Sort records by timestamp descending (newest first)
+    const sortedLogs = records.sort((a, b) => {
+      const tA = new Date(a.timestamp).getTime();
+      const tB = new Date(b.timestamp).getTime();
       return tB - tA;
     });
 
@@ -3495,7 +3430,7 @@ function SecurityMonitoring({ initialMode = 'logs' }) {
                 size="small"
                 variant={fromDate && toDate && dayjs(fromDate).isSame(dayjs(toDate), 'day') && dayjs(fromDate).isSame(dayjs(), 'day') ? 'contained' : 'outlined'}
                 onClick={() => {
-                  const today = dayjs().year(2025);
+                  const today = dayjs();
                   setFromDate(today);
                   setToDate(today);
                   setPage(0);
@@ -3508,7 +3443,7 @@ function SecurityMonitoring({ initialMode = 'logs' }) {
                 size="small"
                 variant={fromDate && toDate && dayjs(fromDate).isSame(dayjs().subtract(7, 'day'), 'day') && dayjs(toDate).isSame(dayjs(), 'day') ? 'contained' : 'outlined'}
                 onClick={() => {
-                  const today = dayjs().year(2025);
+                  const today = dayjs();
                   setFromDate(today.subtract(7, 'day'));
                   setToDate(today);
                   setPage(0);
@@ -3521,7 +3456,7 @@ function SecurityMonitoring({ initialMode = 'logs' }) {
                 size="small"
                 variant={fromDate && toDate && dayjs(fromDate).isSame(dayjs().subtract(30, 'day'), 'day') && dayjs(toDate).isSame(dayjs(), 'day') ? 'contained' : 'outlined'}
                 onClick={() => {
-                  const today = dayjs().year(2025);
+                  const today = dayjs();
                   setFromDate(today.subtract(30, 'day'));
                   setToDate(today);
                   setPage(0);
@@ -4636,12 +4571,12 @@ function SecurityMonitoring({ initialMode = 'logs' }) {
                   ) : (
                     filteredLogs.map((record) => {
                       // Logic check for grouping:
-                      // If 'related_rules' exists and has length > 1 (meaning multiple rules for this single event),
-                      // OR if 'grouped_count' > 1 (meaning multiple raw logs merged, e.g. spammy logs)
-                      // Then we treat it as a group.
+                      // DISABLED: Now showing each log as separate row, no grouping
+                      // Previously grouped when 'related_rules' or 'grouped_count' > 1
 
                       const hasRelatedRules = record.related_rules && record.related_rules.length > 0;
-                      const isGrouped = hasRelatedRules || (record.grouped_count > 1);
+                      // DISABLED GROUPING: Show each log as individual row
+                      const isGrouped = false; // Was: hasRelatedRules || (record.grouped_count > 1);
 
                       const rowId = record.log_id || record.id || `${record.timestamp}-${record.user}`;
                       const isExpanded = expandedRows[rowId];
@@ -4650,7 +4585,16 @@ function SecurityMonitoring({ initialMode = 'logs' }) {
                       // FIX: Force Override for FIM / IDS Alerts (Auto-Heal) that are misclassified
                       // -----------------------------------------------------------
                       let ruleCode = record.rule_code;
-                      let isViolation = record.is_group_violation || record.has_violation;
+
+                      // CRITICAL FIX: Respect has_violation from backend
+                      // If has_violation is explicitly false OR severity is 'compliant', log is COMPLIANT
+                      const isExplicitlyCompliant =
+                        record.has_violation === false ||
+                        record.severity === 'compliant' ||
+                        record.compliance_status === 'compliant' ||
+                        (record.id || '').includes('::ok');
+
+                      let isViolation = !isExplicitlyCompliant && (record.is_group_violation || record.has_violation === true);
                       let isFIM = false;
 
                       try {
@@ -4728,14 +4672,7 @@ function SecurityMonitoring({ initialMode = 'logs' }) {
                           {/* Main Row */}
                           <TableRow sx={rowStyle} hover>
                             <TableCell padding="checkbox">
-                              {(isGrouped || isFIM) && (
-                                <IconButton
-                                  size="small"
-                                  onClick={() => toggleRow(rowId)}
-                                >
-                                  {isExpanded ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-                                </IconButton>
-                              )}
+                              {/* Expand button removed - grouping disabled */}
                             </TableCell>
                             <TableCell>
                               {isGrouped && record.earliest_timestamp && record.latest_timestamp ? (
@@ -4893,6 +4830,7 @@ function SecurityMonitoring({ initialMode = 'logs' }) {
                                           <TableCell>Tên quy tắc</TableCell>
                                           <TableCell>Đánh giá</TableCell>
                                           <TableCell>Mức độ</TableCell>
+                                          <TableCell align="center">Chi tiết</TableCell>
                                         </TableRow>
                                       </TableHead>
                                       <TableBody>
@@ -4998,6 +4936,30 @@ function SecurityMonitoring({ initialMode = 'logs' }) {
                                                   </TableCell>
                                                   <TableCell>
                                                     {detail.severity || '-'}
+                                                  </TableCell>
+                                                  <TableCell align="center">
+                                                    <Tooltip title={isDetailViolation ? "Xem chi tiết vi phạm" : "Xem chi tiết tuân thủ"}>
+                                                      <IconButton
+                                                        size="small"
+                                                        onClick={() => {
+                                                          // Open dialog with this specific rule context
+                                                          handleOpenDetail({
+                                                            ...record,
+                                                            rule_code: detail.rule_code,
+                                                            rule_name: detail.rule_name,
+                                                            has_violation: isDetailViolation,
+                                                            severity: detail.severity,
+                                                            _single_rule_view: true
+                                                          });
+                                                        }}
+                                                        sx={{
+                                                          color: isDetailViolation ? 'error.main' : 'success.main',
+                                                          '&:hover': { bgcolor: isDetailViolation ? 'error.light' : 'success.light' }
+                                                        }}
+                                                      >
+                                                        <InfoIcon fontSize="small" />
+                                                      </IconButton>
+                                                    </Tooltip>
                                                   </TableCell>
                                                 </TableRow>
                                               );

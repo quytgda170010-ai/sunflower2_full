@@ -288,7 +288,19 @@ export default function LogDetailsDialog({
         } catch { return false; }
     }, [selectedLog]);
 
-    const isViolation = selectedLog?.ground_truth_label === 1 || selectedLog?.has_violation || selectedLog?.failed_rules > 0 || isFIM;
+    // CRITICAL FIX: Respect has_violation from backend
+    // If has_violation is explicitly false, log is COMPLIANT regardless of other fields
+    const isExplicitlyCompliant = selectedLog?.has_violation === false ||
+        selectedLog?.severity === 'compliant' ||
+        selectedLog?.compliance_status === 'compliant' ||
+        (selectedLog?.id || '').includes('::ok');
+
+    const isViolation = !isExplicitlyCompliant && (
+        selectedLog?.ground_truth_label === 1 ||
+        selectedLog?.has_violation === true ||
+        selectedLog?.failed_rules > 0 ||
+        isFIM
+    );
     const isSQLi = isSQLInjection; // Alias
     const isEMR = selectedLog?.log_type === 'EMR_ACCESS_LOG' || selectedLog?.log_type === 'emr_access_log' || selectedLog?.functional_group === 'emr';
     const isEncryption = (selectedLog?.uri || '').includes('encryption') ||
@@ -537,10 +549,256 @@ export default function LogDetailsDialog({
         return null;
     };
 
+    // ============================================
+    // UNIFIED SINGLE RULE VIEW TEMPLATE
+    // ============================================
+    // This template is used when clicking "Chi tiết" button on individual rules
+    // Uses the clean layout (image 2 style) with colors based on violation status
+    if (selectedLog._single_rule_view) {
+        // CRITICAL FIX: Only show violation if has_violation is explicitly true
+        const isViolationView = selectedLog.has_violation === true && selectedLog.severity !== 'compliant';
+        const ruleCode = selectedLog.rule_code || 'N/A';
+        const ruleName = selectedLog.rule_name || 'N/A';
+        const logDetails = parseJsonSafe(selectedLog.details) || {};
+        const user = selectedLog.user || selectedLog.actor_name || logDetails.username || selectedLog.username || 'Unknown';
+        // Try multiple fields for IP, only show first if comma-separated
+        const rawIP = selectedLog.source_ip || selectedLog.ip_address || selectedLog.client_ip ||
+            selectedLog.remote_addr || selectedLog.x_forwarded_for ||
+            logDetails.ip_address || logDetails.source_ip || logDetails.client_ip ||
+            logDetails.remote_addr || logDetails.ipAddress || 'Không xác định';
+        const sourceIP = rawIP.split(',')[0].trim();
+        // Try multiple fields for action
+        const actionText = selectedLog.action || selectedLog.action_description ||
+            logDetails.action || logDetails.action_description ||
+            selectedLog.operation || 'N/A';
+
+        // Colors based on violation status
+        const theme = isViolationView
+            ? {
+                primary: '#d32f2f',
+                light: '#ffebee',
+                border: '#ffcdd2',
+                icon: '🚨',
+                title: 'VI PHẠM QUY TẮC',
+                statusLabel: '❌ VI PHẠM',
+                summaryTitle: 'PHÁT HIỆN VI PHẠM',
+                summaryText: `Hoạt động của ${user} đã vi phạm quy tắc bảo mật. Cần xem xét và xử lý theo quy định.`
+            }
+            : {
+                primary: '#2e7d32',
+                light: '#e8f5e9',
+                border: '#c8e6c9',
+                icon: '✅',
+                title: 'TUÂN THỦ QUY TẮC',
+                statusLabel: '✅ TUÂN THỦ',
+                summaryTitle: 'HOẠT ĐỘNG HỢP LỆ',
+                summaryText: `Hoạt động của ${user} tuân thủ đầy đủ quy định bảo mật và pháp luật.`
+            };
+
+        return (
+            <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth PaperProps={{ sx: { minHeight: '50vh', p: 0 } }}>
+                {/* Header - Dynamic color based on violation status */}
+                <Box sx={{ p: 2.5, background: `linear-gradient(135deg, ${theme.primary} 0%, ${theme.primary}dd 100%)`, color: 'white' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <Box>
+                            <Typography variant="h6" sx={{ fontWeight: 600, letterSpacing: 0.5 }}>
+                                {theme.icon} {theme.title}
+                            </Typography>
+                            <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
+                                Sự kiện #{selectedLog.id?.substring(0, 8)}... • {formatTimestamp(selectedLog.timestamp)}
+                            </Typography>
+                        </Box>
+                        <Box sx={{ textAlign: 'right' }}>
+                            <Chip
+                                label={theme.statusLabel}
+                                sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white', fontWeight: 'bold', fontSize: '0.85rem' }}
+                            />
+                            <Typography variant="caption" sx={{ display: 'block', mt: 0.5, opacity: 0.9 }}>
+                                {ruleCode}
+                            </Typography>
+                        </Box>
+                    </Box>
+                </Box>
+
+                <Box sx={{ p: 3 }}>
+                    {/* Section 1: Summary */}
+                    <Card sx={{ mb: 2, border: `1px solid ${theme.border}`, bgcolor: theme.light }}>
+                        <CardContent sx={{ py: 2 }}>
+                            <Grid container spacing={2} alignItems="center">
+                                <Grid item xs={12} md={8}>
+                                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: theme.primary }}>
+                                        {theme.summaryTitle}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        {theme.summaryText}
+                                    </Typography>
+                                </Grid>
+                                <Grid item xs={12} md={4}>
+                                    <Box sx={{ textAlign: 'center', p: 1, bgcolor: 'white', borderRadius: 1, border: `1px solid ${theme.border}` }}>
+                                        <Chip label={isViolationView ? "⚠️ XỬ LÝ" : "✓ ĐẠT"} color={isViolationView ? "error" : "success"} sx={{ fontWeight: 'bold' }} />
+                                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                                            {selectedLog.severity || 'medium'}
+                                        </Typography>
+                                    </Box>
+                                </Grid>
+                            </Grid>
+                        </CardContent>
+                    </Card>
+
+                    {/* Section 2: Details Table */}
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: '#424242' }}>
+                        📋 CHI TIẾT SỰ KIỆN
+                    </Typography>
+                    <TableContainer component={Paper} variant="outlined" sx={{ mb: 2 }}>
+                        <Table size="small">
+                            <TableBody>
+                                <TableRow>
+                                    <TableCell sx={{ fontWeight: 600, width: '35%', bgcolor: '#f5f5f5' }}>Quy tắc áp dụng</TableCell>
+                                    <TableCell>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <Chip label={ruleCode} size="small" color={isViolationView ? "error" : "success"} />
+                                            <Typography variant="body2">{ruleName}</Typography>
+                                        </Box>
+                                    </TableCell>
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell sx={{ fontWeight: 600, bgcolor: '#f5f5f5' }}>Người dùng</TableCell>
+                                    <TableCell>
+                                        <Chip label={user} size="small" color="primary" variant="outlined" />
+                                    </TableCell>
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell sx={{ fontWeight: 600, bgcolor: '#f5f5f5' }}>Trạng thái</TableCell>
+                                    <TableCell>
+                                        <Chip
+                                            label={isViolationView ? "❌ Vi phạm quy tắc" : "✅ Tuân thủ quy tắc"}
+                                            size="small"
+                                            color={isViolationView ? "error" : "success"}
+                                        />
+                                    </TableCell>
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell sx={{ fontWeight: 600, bgcolor: '#f5f5f5' }}>Hành động</TableCell>
+                                    <TableCell>{actionText}</TableCell>
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell sx={{ fontWeight: 600, bgcolor: '#f5f5f5' }}>Thời gian</TableCell>
+                                    <TableCell sx={{ fontFamily: 'monospace' }}>{formatTimestamp(selectedLog.timestamp)}</TableCell>
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell sx={{ fontWeight: 600, bgcolor: '#f5f5f5' }}>Nguồn IP</TableCell>
+                                    <TableCell sx={{ fontFamily: 'monospace' }}>{sourceIP}</TableCell>
+                                </TableRow>
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+
+                    {/* Section 3: Compliance Status */}
+                    {showComplianceSection && (
+                        <>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: '#424242' }}>
+                                ⚖️ TRẠNG THÁI TUÂN THỦ PHÁP LÝ
+                            </Typography>
+                            <Card sx={{ mb: 2, border: `1px solid ${theme.border}`, bgcolor: theme.light }}>
+                                <CardContent sx={{ py: 2 }}>
+                                    <Grid container spacing={2}>
+                                        <Grid item xs={12} md={6}>
+                                            <Typography variant="body2" sx={{ fontWeight: 600, color: theme.primary, mb: 0.5 }}>
+                                                Căn cứ pháp lý Việt Nam
+                                            </Typography>
+                                            <Typography variant="body2" sx={{ mb: 0.5 }}>
+                                                <a href="https://thuvienphapluat.vn/van-ban/Cong-nghe-thong-tin/Luat-an-ninh-mang-2018-351416.aspx" target="_blank" rel="noopener noreferrer" style={{ color: '#1976d2' }}>
+                                                    Luật An ninh mạng 2018 - Điều 26
+                                                </a>
+                                            </Typography>
+                                            <Typography variant="body2" sx={{ mb: 0.5 }}>
+                                                <a href="https://thuvienphapluat.vn/van-ban/Cong-nghe-thong-tin/Luat-an-toan-thong-tin-mang-2015-298365.aspx" target="_blank" rel="noopener noreferrer" style={{ color: '#1976d2' }}>
+                                                    Luật ATTT mạng 2015 - Điều 7
+                                                </a>
+                                            </Typography>
+                                            <Typography variant="body2" sx={{ mt: 1, color: theme.primary, fontWeight: 600 }}>
+                                                {isViolationView ? 'CẦN XỬ LÝ VI PHẠM' : 'TUÂN THỦ ĐẦY ĐỦ'}
+                                            </Typography>
+                                        </Grid>
+                                        <Grid item xs={12} md={6}>
+                                            <Typography variant="body2" sx={{ fontWeight: 600, color: '#1565c0', mb: 0.5 }}>
+                                                Tiêu chuẩn quốc tế
+                                            </Typography>
+                                            <Typography variant="body2">
+                                                ISO/IEC 27001:2022
+                                            </Typography>
+                                            <Typography variant="caption" color="text.secondary">
+                                                Information Security Management
+                                            </Typography>
+                                            <Typography variant="body2" sx={{ mt: 0.5 }}>
+                                                NIST 800-53
+                                            </Typography>
+                                        </Grid>
+                                    </Grid>
+                                </CardContent>
+                            </Card>
+
+                            {/* Recommendations */}
+                            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: '#424242' }}>
+                                {isViolationView ? 'KHUYẾN NGHỊ XỬ LÝ' : 'KHUYẾN NGHỊ TUÂN THỦ'}
+                            </Typography>
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                                {isViolationView ? (
+                                    <>
+                                        <Chip label="Xem xét sự cố" size="small" variant="outlined" color="error" />
+                                        <Chip label="Kiểm tra lịch sử" size="small" variant="outlined" color="warning" />
+                                        <Chip label="Lập biên bản" size="small" variant="outlined" color="error" />
+                                        <Chip label="Thông báo quản lý" size="small" variant="outlined" color="warning" />
+                                    </>
+                                ) : (
+                                    <>
+                                        <Chip label="Ghi log SIEM" size="small" variant="outlined" color="success" />
+                                        <Chip label="Tuân thủ Luật ANM 2018" size="small" variant="outlined" color="success" />
+                                        <Chip label="ISO 27001" size="small" variant="outlined" color="primary" />
+                                    </>
+                                )}
+                            </Box>
+                        </>
+                    )}
+
+                    {/* Section 4: Raw Data */}
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: '#424242' }}>
+                        📄 DỮ LIỆU RAW
+                    </Typography>
+                    <Card variant="outlined" sx={{ mb: 2, bgcolor: '#fafafa' }}>
+                        <CardContent sx={{ py: 1.5 }}>
+                            <Box sx={{ fontFamily: 'monospace', fontSize: '0.75rem', whiteSpace: 'pre-wrap', wordBreak: 'break-all', maxHeight: 150, overflow: 'auto' }}>
+                                {JSON.stringify({
+                                    id: selectedLog.id,
+                                    timestamp: selectedLog.timestamp,
+                                    user: user,
+                                    role: selectedLog.role,
+                                    action: selectedLog.action,
+                                    status: selectedLog.status,
+                                    rule_code: ruleCode,
+                                    rule_name: ruleName,
+                                    has_violation: isViolationView,
+                                    severity: selectedLog.severity
+                                }, null, 2)}
+                            </Box>
+                        </CardContent>
+                    </Card>
+                </Box>
+
+                {/* Footer */}
+                <DialogActions sx={{ p: 2, borderTop: '1px solid #e0e0e0' }}>
+                    <Button onClick={onClose} variant="contained" color={isViolationView ? "error" : "success"}>
+                        Đóng
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        );
+    }
 
 
     // --- WAF COMPLIANCE EVENT VIEW (Policy Compliance Monitoring) ---
-    if (isWAF && !isBruteForce) {
+    // BYPASSED: Using unified template instead
+    if (false && isWAF && !isBruteForce) {
         const wafDetails = parseJsonSafe(selectedLog.details) || {};
         const logSnapshotDetails = wafDetails.log_snapshot?.details || wafDetails;
 
@@ -810,7 +1068,8 @@ export default function LogDetailsDialog({
     }
 
     // --- SUCCESSFUL AUTHENTICATION (COMPLIANCE) VIEW - SYS-AUTH-01 ---
-    if (isAuthCompliance && !isBruteForce) {
+    // BYPASSED: Using unified template instead
+    if (false && isAuthCompliance && !isBruteForce) {
         const authDetails = parseJsonSafe(selectedLog.details) || {};
         const successUser = selectedLog.user || selectedLog.actor_name || authDetails.username || 'Unknown';
         const sourceIP = selectedLog.source_ip || authDetails.ip_address || 'N/A';
@@ -1011,7 +1270,8 @@ export default function LogDetailsDialog({
     }
 
     // --- BRUTE FORCE / AUTHENTICATION FAILURE VIEW ---
-    if (isBruteForce) {
+    // BYPASSED: Using unified template instead
+    if (false && isBruteForce) {
         const authDetails = parseJsonSafe(selectedLog.details) || {};
         const status = parseInt(selectedLog.status) || 0;
         const isLocked = status === 423 || authDetails.account_locked;
@@ -1235,7 +1495,8 @@ export default function LogDetailsDialog({
     }
 
     // --- SIEM LOG TAMPERING VIEW (R-AUD-01 / SIEM_WATCHDOG) - NEW DESIGN ---
-    if (isSIEMLogTampering) {
+    // BYPASSED: Using unified template instead
+    if (false && isSIEMLogTampering) {
         const siemDetails = parseJsonSafe(selectedLog.details) || {};
         const tamperedAt = formatTimestamp(selectedLog.timestamp);
         const alertMessage = selectedLog.action || siemDetails.message || 'Phát hiện xóa dấu vết (Log Tampering)';
@@ -1438,7 +1699,8 @@ export default function LogDetailsDialog({
     }
 
     // --- SECURITY ALERT VIEW (Image 2 Style) ---
-    if ((isViolation || isSQLi) && !isBruteForce) {
+    // BYPASSED: Using unified template instead
+    if (false && (isViolation || isSQLi) && !isBruteForce) {
         return (
             <Dialog open={open} onClose={onClose} maxWidth="xl" fullWidth PaperProps={{ sx: { minHeight: '85vh', p: 0 } }}>
                 <Box sx={{ p: 0 }}>
@@ -2022,6 +2284,69 @@ export default function LogDetailsDialog({
         const status = parseInt(selectedLog.status) || 200;
         const isSuccess = status >= 200 && status < 300;
 
+        // DEBUG: Log values to browser console
+        console.log('[getLogInfo DEBUG]', {
+            has_violation: selectedLog.has_violation,
+            severity: selectedLog.severity,
+            compliance_status: selectedLog.compliance_status,
+            rule_code: selectedLog.rule_code,
+            id: selectedLog.id
+        });
+
+        // ===== PRIORITY 0: Explicitly check has_violation field FIRST =====
+        // This takes highest priority - if has_violation is explicitly false, show TUÂN THỦ
+        if (selectedLog.has_violation === false ||
+            selectedLog.has_violation === 'false' ||
+            selectedLog.has_violation === 0 ||
+            selectedLog.severity === 'compliant' ||
+            selectedLog.compliance_status === 'compliant' ||
+            (selectedLog.id || '').includes('::ok')) {
+            // COMPLIANT LOG - GREEN
+            return {
+                title: selectedLog.rule_code ? `TUÂN THỦ: ${selectedLog.rule_code}` : 'TUÂN THỦ QUY TẮC',
+                icon: '✅',
+                color: '#2e7d32',
+                bgColor: '#e8f5e9'
+            };
+        }
+
+        // PRIORITY 1: Single rule view (clicked from expanded rule list)
+        if (selectedLog._single_rule_view) {
+            if (selectedLog.has_violation) {
+                return {
+                    title: `VI PHẠM: ${selectedLog.rule_code}`,
+                    icon: '🚨',
+                    color: '#d32f2f',
+                    bgColor: '#ffebee'
+                };
+            } else {
+                return {
+                    title: `TUÂN THỦ: ${selectedLog.rule_code}`,
+                    icon: '✅',
+                    color: '#2e7d32',
+                    bgColor: '#e8f5e9'
+                };
+            }
+        }
+
+        // PRIORITY 2: Detect violations from behavior monitoring flags
+        // (Compliant logs already returned in PRIORITY 0, so only violations reach here)
+        if (isViolation || isSQLi || isBruteForce || isSIEMLogTampering) {
+            const ruleCode = selectedLog.rule_code || 'SECURITY';
+            if (isSQLi) {
+                return { title: 'TẤN CÔNG SQL INJECTION', icon: '🛡️', color: '#b71c1c', bgColor: '#ffebee' };
+            }
+            if (isBruteForce) {
+                return { title: 'TẤN CÔNG BRUTE FORCE', icon: '🔐', color: '#d84315', bgColor: '#fbe9e7' };
+            }
+            if (isSIEMLogTampering) {
+                return { title: 'XÓA DẤU VẾT HỆ THỐNG', icon: '🚨', color: '#b71c1c', bgColor: '#ffebee' };
+            }
+            return { title: `VI PHẠM: ${ruleCode}`, icon: '⚠️', color: '#d32f2f', bgColor: '#ffebee' };
+        }
+
+        // (PRIORITY 4 removed - compliant logs now handled in PRIORITY 0 above)
+
         // Login logs
         if (action.includes('đăng nhập') || action.includes('login')) {
             if (action.includes('thất bại') || action.includes('failed') || !isSuccess) {
@@ -2119,7 +2444,7 @@ export default function LogDetailsDialog({
                                     <TableRow>
                                         <TableCell sx={{ fontWeight: 600, bgcolor: '#f5f5f5' }}>Hành động</TableCell>
                                         <TableCell>
-                                            <Typography variant="body2" fontWeight="bold">{selectedLog.action || 'N/A'}</Typography>
+                                            <Typography variant="body2" fontWeight="bold">{selectedLog.action || selectedLog.action_description || (parseJsonSafe(selectedLog.details) || {}).action || selectedLog.operation || 'N/A'}</Typography>
                                         </TableCell>
                                     </TableRow>
                                     <TableRow>
@@ -2139,6 +2464,32 @@ export default function LogDetailsDialog({
                                     <TableRow>
                                         <TableCell sx={{ fontWeight: 600, bgcolor: '#f5f5f5' }}>Mục đích</TableCell>
                                         <TableCell>{selectedLog.purpose || 'N/A'}</TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell sx={{ fontWeight: 600, bgcolor: '#f5f5f5' }}>Nguồn IP</TableCell>
+                                        <TableCell sx={{ fontFamily: 'monospace' }}>
+                                            {(() => {
+                                                const details = parseJsonSafe(selectedLog.details) || {};
+                                                // Check multiple possible IP fields
+                                                const ip = selectedLog.source_ip ||
+                                                    selectedLog.ip_address ||
+                                                    selectedLog.client_ip ||
+                                                    selectedLog.remote_addr ||
+                                                    selectedLog.x_forwarded_for ||
+                                                    details.ip_address ||
+                                                    details.source_ip ||
+                                                    details.client_ip ||
+                                                    details.remote_addr ||
+                                                    details.x_forwarded_for ||
+                                                    details.ipAddress ||
+                                                    // Check nested fields
+                                                    (details.request || {}).ip ||
+                                                    (details.client || {}).ip ||
+                                                    'Không xác định';
+                                                // Only show first IP if multiple (comma-separated)
+                                                return ip.split(',')[0].trim();
+                                            })()}
+                                        </TableCell>
                                     </TableRow>
                                     {(selectedLog.patient_name || selectedLog.patient_id) && (
                                         <TableRow>
@@ -2165,12 +2516,25 @@ export default function LogDetailsDialog({
                                     const action = (selectedLog.action || '').toLowerCase();
                                     const status = parseInt(selectedLog.status) || 200;
                                     const isSuccess = status >= 200 && status < 300;
-                                    // BUG FIX: Also check for failure statuses and failed login actions
-                                    const isFailureStatus = [401, 403, 423].includes(status);
-                                    const isFailedAction = (selectedLog.action || '').toLowerCase().includes('thất bại') ||
-                                        (selectedLog.action || '').toLowerCase().includes('failed');
-                                    const hasViolation = (violatedRules && violatedRules.length > 0 && violatedRules.some(r => r.has_violation !== false)) ||
-                                        isFailureStatus || isFailedAction || selectedLog.has_violation || selectedLog.failed_rules > 0;
+
+                                    // FIX: Use same logic as header (getLogInfo) for consistency
+                                    // Check directly from selectedLog, not from violatedRules array which may be misleading
+                                    const isExplicitlyCompliant =
+                                        selectedLog.has_violation === false ||
+                                        selectedLog.has_violation === 'false' ||
+                                        selectedLog.has_violation === 0 ||
+                                        selectedLog.severity === 'compliant' ||
+                                        selectedLog.compliance_status === 'compliant' ||
+                                        (selectedLog.id || '').includes('::ok');
+
+                                    const isExplicitlyViolation =
+                                        selectedLog.has_violation === true ||
+                                        selectedLog.has_violation === 'true' ||
+                                        selectedLog.has_violation === 1 ||
+                                        selectedLog.ground_truth_label === 1 ||
+                                        selectedLog.failed_rules > 0;
+
+                                    const hasViolation = isExplicitlyViolation && !isExplicitlyCompliant;
 
 
                                     // Get matched rule info from selectedLog or violatedRules
@@ -2236,8 +2600,10 @@ export default function LogDetailsDialog({
                                     const finalPenaltyLevel = penaltyLevel || defaultCompliance.penaltyLevel;
                                     const finalLawUrl = lawUrl || defaultCompliance.lawUrl;
 
-                                    // Determine compliance status
-                                    const isCompliant = isSuccess && !hasViolation;
+                                    // Determine compliance status - prioritize explicit flags from backend
+                                    // CRITICAL FIX: If not explicitly a violation, treat as COMPLIANT
+                                    // This prevents login failures (status 401) from showing as "VI PHẠM"
+                                    const isCompliant = isExplicitlyCompliant || !hasViolation;
 
                                     return (
                                         <Card
@@ -2381,7 +2747,20 @@ export default function LogDetailsDialog({
                                     </TableRow>
                                     <TableRow>
                                         <TableCell sx={{ fontWeight: 600, bgcolor: '#f5f5f5' }}>IP Address</TableCell>
-                                        <TableCell sx={{ fontFamily: 'monospace' }}>{selectedLog.ip_address || selectedLog.source_ip || 'N/A'}</TableCell>
+                                        <TableCell sx={{ fontFamily: 'monospace' }}>
+                                            {(() => {
+                                                const details = parseJsonSafe(selectedLog.details) || {};
+                                                const ip = selectedLog.ip_address ||
+                                                    selectedLog.source_ip ||
+                                                    selectedLog.client_ip ||
+                                                    selectedLog.remote_addr ||
+                                                    details.ip_address ||
+                                                    details.source_ip ||
+                                                    details.ipAddress ||
+                                                    'Không xác định';
+                                                return ip.split(',')[0].trim();
+                                            })()}
+                                        </TableCell>
                                     </TableRow>
                                     <TableRow>
                                         <TableCell sx={{ fontWeight: 600, bgcolor: '#f5f5f5' }}>User Agent</TableCell>
