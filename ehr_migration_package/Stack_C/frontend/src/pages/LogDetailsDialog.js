@@ -2488,25 +2488,40 @@ export default function LogDetailsDialog({
                                         <TableCell sx={{ fontFamily: 'monospace' }}>
                                             {(() => {
                                                 const details = parseJsonSafe(selectedLog.details) || {};
+                                                // DEBUG: Log all fields to find IP
+                                                console.log('[IP DEBUG]', {
+                                                    selectedLog_keys: Object.keys(selectedLog),
+                                                    details_keys: Object.keys(details),
+                                                    source_ip: selectedLog.source_ip,
+                                                    ip: selectedLog.ip,
+                                                    remote_addr: selectedLog.remote_addr
+                                                });
                                                 // Check multiple possible IP fields
                                                 const ip = selectedLog.source_ip ||
                                                     selectedLog.ip_address ||
+                                                    selectedLog.ip ||
                                                     selectedLog.client_ip ||
                                                     selectedLog.remote_addr ||
                                                     selectedLog.x_forwarded_for ||
+                                                    selectedLog.addr ||
                                                     details.ip_address ||
                                                     details.source_ip ||
+                                                    details.ip ||
                                                     details.client_ip ||
                                                     details.remote_addr ||
                                                     details.x_forwarded_for ||
                                                     details.ipAddress ||
+                                                    details.addr ||
                                                     // Check nested fields
                                                     (details.request || {}).ip ||
                                                     (details.client || {}).ip ||
+                                                    (details.user || {}).ip ||
+                                                    (selectedLog.user_info || {}).ip ||
                                                     'Không xác định';
                                                 // Only show first IP if multiple (comma-separated)
-                                                return ip.split(',')[0].trim();
+                                                return String(ip).split(',')[0].trim();
                                             })()}
+
                                         </TableCell>
                                     </TableRow>
                                     {(selectedLog.patient_name || selectedLog.patient_id) && (
