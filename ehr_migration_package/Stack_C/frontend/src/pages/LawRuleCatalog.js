@@ -21,32 +21,14 @@ import {
   TablePagination,
   CircularProgress,
   Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import GavelIcon from '@mui/icons-material/Gavel';
-import UploadFileIcon from '@mui/icons-material/UploadFile';
-import { fetchLawRules, createLawRule, importLawDocument } from '../services/api';
+import { fetchLawRules } from '../services/api';
 
 const statusOptions = [
   { value: 'allowed', label: 'Allowed' },
   { value: 'required', label: 'Required' },
   { value: 'not_allowed', label: 'Not Allowed' },
 ];
-
-const defaultNewRule = {
-  law_source: '',
-  rule_code: '',
-  rule_name: '',
-  allowed_status: 'required',
-  legal_refs: '',
-  explanation: '',
-  functional_group: '',
-};
 
 const LawRuleCatalog = () => {
   const [rules, setRules] = useState([]);
@@ -70,15 +52,6 @@ const LawRuleCatalog = () => {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [successMessage, setSuccessMessage] = useState('');
-  const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [newRule, setNewRule] = useState(defaultNewRule);
-  const [savingRule, setSavingRule] = useState(false);
-  const [importDialogOpen, setImportDialogOpen] = useState(false);
-  const [importFile, setImportFile] = useState(null);
-  const [importing, setImporting] = useState(false);
-  const [importProgress, setImportProgress] = useState(0);
-  const [importResult, setImportResult] = useState(null);
 
   const buildParams = useCallback(() => {
     const params = {
@@ -145,79 +118,6 @@ const LawRuleCatalog = () => {
     setPage(0);
   };
 
-  const handleAddRuleChange = (field) => (event) => {
-    setNewRule((prev) => ({
-      ...prev,
-      [field]: event.target.value,
-    }));
-  };
-
-  const handleAddRuleSubmit = async () => {
-    if (!newRule.law_source || !newRule.rule_code || !newRule.rule_name) {
-      setError('Vui lòng nhập đủ Nguồn luật, Mã quy tắc và Tên quy tắc.');
-      return;
-    }
-    setSavingRule(true);
-    setError(null);
-    try {
-      const payload = {
-        ...newRule,
-        allowed_status: newRule.allowed_status || undefined,
-      };
-      const response = await createLawRule(payload);
-      if (response.success) {
-        setSuccessMessage('Đã thêm quy tắc mới thành công.');
-        setAddDialogOpen(false);
-        setNewRule(defaultNewRule);
-        setMetaLoaded(false); // reload filters and metadata
-        await loadRules({ forceMeta: true });
-      }
-    } catch (err) {
-      console.error('[LawRuleCatalog] Failed to create rule:', err);
-      const message = err.response?.data?.detail || 'Không thể thêm quy tắc mới.';
-      setError(message);
-    } finally {
-      setSavingRule(false);
-    }
-  };
-
-  const handleImportFile = async () => {
-    if (!importFile) {
-      setError('Vui lòng chọn file để import.');
-      return;
-    }
-
-    setImporting(true);
-    setError(null);
-    setImportProgress(0);
-    setImportResult(null);
-
-    try {
-      const result = await importLawDocument(importFile, (progress) => {
-        setImportProgress(progress);
-      });
-
-      setImportResult(result);
-
-      if (result.success) {
-        setSuccessMessage(
-          `Đã tạo ${result.rules_created} quy tắc từ văn bản. ` +
-          (result.rules_skipped > 0 ? `Bỏ qua ${result.rules_skipped} quy tắc trùng lặp.` : '') +
-          (result.needs_review ? ' Có quy tắc cần xem xét lại.' : '')
-        );
-        setMetaLoaded(false);
-        await loadRules({ forceMeta: true });
-      }
-    } catch (err) {
-      console.error('[LawRuleCatalog] Failed to import document:', err);
-      const message = err.response?.data?.detail || 'Không thể import văn bản.';
-      setError(message);
-    } finally {
-      setImporting(false);
-      setImportProgress(0);
-    }
-  };
-
   const renderChipList = (items = []) => {
     if (!items || items.length === 0) {
       return <Typography variant="caption" color="text.secondary">-</Typography>;
@@ -255,50 +155,11 @@ const LawRuleCatalog = () => {
           </Typography>
         </Box>
         <Box sx={{ flexGrow: 1 }} />
-        <Button
-          variant="outlined"
-          startIcon={<RefreshIcon />}
-          onClick={() => loadRules()}
-          sx={{ mr: 1 }}
-        >
-          Làm mới
-        </Button>
-        <Button
-          variant="outlined"
-          color="secondary"
-          startIcon={<UploadFileIcon />}
-          onClick={() => {
-            setImportDialogOpen(true);
-            setImportFile(null);
-            setImportResult(null);
-            setImportProgress(0);
-            setError(null);
-          }}
-          sx={{ mr: 1 }}
-        >
-          Import Văn bản
-        </Button>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => {
-            setAddDialogOpen(true);
-            setSuccessMessage('');
-            setError(null);
-          }}
-        >
-          Thêm quy tắc
-        </Button>
       </Box>
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {error}
-        </Alert>
-      )}
-      {successMessage && (
-        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMessage('')}>
-          {successMessage}
         </Alert>
       )}
 
@@ -537,196 +398,6 @@ const LawRuleCatalog = () => {
           labelRowsPerPage="Số dòng mỗi trang:"
         />
       </Paper>
-
-      <Dialog open={addDialogOpen} onClose={() => setAddDialogOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>
-          <Stack direction="row" spacing={1} alignItems="center">
-            <GavelIcon />
-            Thêm quy tắc tuân thủ mới
-          </Stack>
-        </DialogTitle>
-        <DialogContent dividers>
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
-              <TextField
-                label="Nguồn luật"
-                value={newRule.law_source}
-                onChange={handleAddRuleChange('law_source')}
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                label="Mã quy tắc"
-                value={newRule.rule_code}
-                onChange={handleAddRuleChange('rule_code')}
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                label="Tên quy tắc"
-                value={newRule.rule_name}
-                onChange={handleAddRuleChange('rule_name')}
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
-                <InputLabel>Trạng thái</InputLabel>
-                <Select
-                  label="Trạng thái"
-                  value={newRule.allowed_status}
-                  onChange={handleAddRuleChange('allowed_status')}
-                >
-                  {statusOptions.map((option) => (
-                    <MenuItem key={option.value} value={option.value}>
-                      {option.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                label="Nhóm chức năng"
-                value={newRule.functional_group}
-                onChange={handleAddRuleChange('functional_group')}
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                label="Căn cứ pháp lý"
-                value={newRule.legal_refs}
-                onChange={handleAddRuleChange('legal_refs')}
-                fullWidth
-                multiline
-                minRows={2}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                label="Giải thích / ghi chú"
-                value={newRule.explanation}
-                onChange={handleAddRuleChange('explanation')}
-                fullWidth
-                multiline
-                minRows={2}
-              />
-            </Grid>
-          </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setAddDialogOpen(false)} disabled={savingRule}>
-            Hủy
-          </Button>
-          <Button
-            onClick={handleAddRuleSubmit}
-            variant="contained"
-            disabled={savingRule}
-          >
-            {savingRule ? 'Đang lưu...' : 'Lưu quy tắc'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Import Document Dialog */}
-      <Dialog open={importDialogOpen} onClose={() => !importing && setImportDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Import Văn bản Luật (AI Tự động)</DialogTitle>
-        <DialogContent>
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Upload file PDF hoặc DOCX chứa văn bản luật. Hệ thống sẽ tự động sử dụng AI (OpenAI GPT-4 + Google Gemini)
-              để trích xuất các quy tắc tuân thủ.
-            </Typography>
-
-            <input
-              accept=".pdf,.docx,.doc"
-              style={{ display: 'none' }}
-              id="import-file-input"
-              type="file"
-              onChange={(e) => setImportFile(e.target.files[0])}
-              disabled={importing}
-            />
-            <label htmlFor="import-file-input">
-              <Button
-                variant="outlined"
-                component="span"
-                fullWidth
-                startIcon={<UploadFileIcon />}
-                disabled={importing}
-                sx={{ mb: 2 }}
-              >
-                {importFile ? importFile.name : 'Chọn file (PDF/DOCX)'}
-              </Button>
-            </label>
-
-            {importing && (
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                  Đang xử lý... {importProgress > 0 && `${importProgress}%`}
-                </Typography>
-                {importProgress > 0 && (
-                  <Box sx={{ width: '100%', height: 8, bgcolor: 'grey.200', borderRadius: 1, overflow: 'hidden' }}>
-                    <Box
-                      sx={{
-                        width: `${importProgress}%`,
-                        height: '100%',
-                        bgcolor: 'primary.main',
-                        transition: 'width 0.3s',
-                      }}
-                    />
-                  </Box>
-                )}
-                <CircularProgress size={24} sx={{ mt: 1 }} />
-              </Box>
-            )}
-
-            {importResult && (
-              <Box sx={{ mt: 2 }}>
-                <Alert severity={importResult.success ? 'success' : 'warning'} sx={{ mb: 2 }}>
-                  <Typography variant="body2" fontWeight="bold">
-                    {importResult.message}
-                  </Typography>
-                  <Typography variant="caption" display="block" sx={{ mt: 1 }}>
-                    Độ tin cậy: {(importResult.confidence * 100).toFixed(1)}%
-                  </Typography>
-                  {importResult.needs_review && (
-                    <Typography variant="caption" display="block" color="warning.main" sx={{ mt: 0.5 }}>
-                      Có quy tắc cần xem xét lại
-                    </Typography>
-                  )}
-                </Alert>
-                {importResult.invalid_rules && importResult.invalid_rules.length > 0 && (
-                  <Alert severity="info" sx={{ mt: 1 }}>
-                    <Typography variant="caption">
-                      {importResult.invalid_rules.length} quy tắc không hợp lệ đã được bỏ qua.
-                    </Typography>
-                  </Alert>
-                )}
-              </Box>
-            )}
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => {
-            setImportDialogOpen(false);
-            setImportFile(null);
-            setImportResult(null);
-          }} disabled={importing}>
-            Đóng
-          </Button>
-          <Button
-            onClick={handleImportFile}
-            variant="contained"
-            disabled={!importFile || importing}
-            startIcon={importing ? <CircularProgress size={16} /> : <UploadFileIcon />}
-          >
-            {importing ? 'Đang xử lý...' : 'Import và Xử lý AI'}
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 };
