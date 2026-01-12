@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     Container,
     Typography,
@@ -46,13 +46,21 @@ function MySQLLogs() {
     const today = new Date().toISOString().split('T')[0];
     const [fromDate, setFromDate] = useState(today);
     const [toDate, setToDate] = useState(today);
+    // AbortController ref for cleanup
+    const abortControllerRef = useRef(null);
 
     const fetchLogs = useCallback(async () => {
+        // Cancel previous request if still pending
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+        abortControllerRef.current = new AbortController();
+
         try {
             setLoading(true);
             const params = new URLSearchParams({
                 page: page.toString(),
-                page_size: '200',  // Increased to show more logs per page
+                page_size: '50',  // Reduced for better performance
             });
 
             if (showOnlySuspicious) {
@@ -69,7 +77,9 @@ function MySQLLogs() {
                 params.append('to_date', toDate);
             }
 
-            const res = await api.get(`/api/mysql-logs?${params.toString()}`);
+            const res = await api.get(`/api/mysql-logs?${params.toString()}`, {
+                signal: abortControllerRef.current.signal
+            });
             setLogs(res.data.logs || []);
             setTotalPages(res.data.total_pages || 0);
             setTotal(res.data.total || 0);
@@ -77,6 +87,10 @@ function MySQLLogs() {
             setGeneralLogEnabled(res.data.general_log_enabled);
             setError(null);
         } catch (err) {
+            if (err.name === 'CanceledError' || err.name === 'AbortError') {
+                // Request was aborted, ignore
+                return;
+            }
             console.error('Failed to fetch MySQL logs:', err);
             setError('Không thể tải MySQL logs');
         } finally {
@@ -86,11 +100,17 @@ function MySQLLogs() {
 
     useEffect(() => {
         fetchLogs();
+        // Cleanup on unmount
+        return () => {
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+        };
     }, [fetchLogs]);
 
     useEffect(() => {
         if (!autoRefresh) return;
-        const interval = setInterval(fetchLogs, 5000);
+        const interval = setInterval(fetchLogs, 30000); // Changed from 5s to 30s
         return () => clearInterval(interval);
     }, [autoRefresh, fetchLogs]);
 
