@@ -204,10 +204,13 @@ class SecurityMonitor:
             
             if log_type == 'EMR_ACCESS_LOG':
                 # Tab "Log thao tác EMR" - Hiển thị SQL queries từ DB Collector
-                # Action giờ là tên hành động tiếng Việt (VD: "Xem hồ sơ bệnh nhân")
-                # Không cần filter action nữa, chỉ cần log_type
+                # Loại trừ các logs liên quan security (SQL Injection, XSS, etc.)
                 where_clauses.append("""(
                     a.log_type IN ('DB_LOG', 'db_log')
+                    AND a.action NOT LIKE '%SQL Injection%'
+                    AND a.action NOT LIKE '%tấn công%'
+                    AND a.action NOT LIKE '%XSS%'
+                    AND a.purpose != 'security_alert'
                 )""")
             elif log_type == 'ENCOUNTER_LOG':
                 # Tab "Nội dung khám bệnh" - Lọc DB logs liên quan khám bệnh
