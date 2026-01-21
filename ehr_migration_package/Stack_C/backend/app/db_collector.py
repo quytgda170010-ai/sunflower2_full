@@ -366,23 +366,156 @@ class DatabaseCollector:
             logger.error(f"Error processing log file: {e}")
             return []
 
+    def get_logs_from_table(self):
+        """
+        Read queries from mysql.general_log TABLE
+        This works when general_log is enabled AND log_output = 'TABLE'
+        """
+        try:
+            # Connect to mysql database (not ehr_core) to read general_log
+            mysql_config = self.db_config.copy()
+            mysql_config['database'] = 'mysql'
+            
+            conn = mysql.connector.connect(**mysql_config)
+            cur = conn.cursor(dictionary=True)
+            
+            # Check log_output setting
+            cur.execute("SELECT @@log_output as output")
+            log_output = cur.fetchone()['output']
+            
+            if 'TABLE' not in log_output.upper():
+                cur.close()
+                conn.close()
+                return None  # Not using TABLE output
+            
+            # Get last processed timestamp
+            last_timestamp = None
+            position_file = '/tmp/db_collector_table_position.txt'
+            try:
+                if os.path.exists(position_file):
+                    with open(position_file, 'r') as f:
+                        last_timestamp = f.read().strip()
+            except:
+                pass
+            
+            # Build query
+            if last_timestamp:
+                query = """
+                    SELECT event_time, user_host, thread_id, command_type, argument
+                    FROM mysql.general_log
+                    WHERE command_type = 'Query'
+                    AND event_time > %s
+                    ORDER BY event_time ASC
+                    LIMIT 500
+                """
+                cur.execute(query, (last_timestamp,))
+            else:
+                # First run - get last 30 minutes of logs
+                query = """
+                    SELECT event_time, user_host, thread_id, command_type, argument
+                    FROM mysql.general_log
+                    WHERE command_type = 'Query'
+                    AND event_time >= DATE_SUB(NOW(), INTERVAL 30 MINUTE)
+                    ORDER BY event_time ASC
+                    LIMIT 500
+                """
+                cur.execute(query)
+            
+            rows = cur.fetchall()
+            cur.close()
+            conn.close()
+            
+            # Convert to log entries
+            logs = []
+            latest_timestamp = None
+            
+            for row in rows:
+                query_text = row['argument'] if row['argument'] else ''
+                if isinstance(query_text, bytes):
+                    query_text = query_text.decode('utf-8', errors='ignore')
+                
+                # Skip internal/system queries
+                query_upper = query_text.upper().strip()
+                skip_patterns = [
+                    'SET AUTOCOMMIT', 'SET NAMES', 'SET @@', 'COMMIT', 'ROLLBACK',
+                    'SELECT @@', 'SHOW VARIABLES', 'SHOW COLLATION', 'SHOW WARNINGS',
+                    'FROM MYSQL.GENERAL_LOG', 'FROM ACCESS_LOGS', 'FROM WATCHDOG_ALERTS',
+                    'FROM INFORMATION_SCHEMA'
+                ]
+                if any(pattern in query_upper for pattern in skip_patterns):
+                    continue
+                
+                # Parse user from user_host (format: user[user] @ host [ip])
+                user_host = row['user_host'] if row['user_host'] else ''
+                username = 'unknown'
+                host = 'unknown'
+                if '@' in user_host:
+                    parts = user_host.split('@')
+                    username = parts[0].split('[')[0].strip()
+                    host = parts[1].strip()
+                
+                # Determine command type
+                command = 'SELECT'
+                if query_upper.startswith('INSERT'):
+                    command = 'INSERT'
+                elif query_upper.startswith('UPDATE'):
+                    command = 'UPDATE'
+                elif query_upper.startswith('DELETE'):
+                    command = 'DELETE'
+                
+                logs.append({
+                    'timestamp': row['event_time'],
+                    'user': username,
+                    'host': host,
+                    'database': 'unknown',
+                    'command': command,
+                    'duration': 0,
+                    'query': query_text[:500]
+                })
+                
+                latest_timestamp = row['event_time']
+            
+            # Save position
+            if latest_timestamp:
+                try:
+                    with open(position_file, 'w') as f:
+                        f.write(str(latest_timestamp))
+                except:
+                    pass
+            
+            return logs
+            
+        except Exception as e:
+            logger.error(f"Error reading from general_log table: {e}")
+            return None
+
     def collect_and_process(self):
         """Main collection process"""
         logger.info("Starting Database Log Collection...")
         
-        # 1. Try to enable General Log (as requested by user)
+        # 1. Try to enable General Log
         if not self.check_general_log_enabled():
             logger.info("General log disabled. Attempting to enable...")
             self.enable_general_log()
         
-        # 2. Collect Data (Priority: Log File > Processlist)
+        # 2. Collect Data (Priority: TABLE > File > Processlist)
         logs = []
-        if self.check_general_log_enabled() and os.path.exists(self.log_file):
+        source = 'none'
+        
+        # Try reading from mysql.general_log TABLE first
+        table_logs = self.get_logs_from_table()
+        if table_logs is not None:
+            logs = table_logs
+            source = 'table'
+            logger.info(f"Collecting from mysql.general_log TABLE: {len(logs)} queries")
+        elif self.check_general_log_enabled() and os.path.exists(self.log_file):
             logger.info(f"Collecting from log file: {self.log_file}")
             logs = self.process_log_file()
+            source = 'file'
         else:
             logger.info("Log file not available. Fallback to Processlist.")
             logs = self.get_recent_db_activity()
+            source = 'processlist'
         
         # 3. Insert into SIEM
         inserted = 0
@@ -390,12 +523,12 @@ class DatabaseCollector:
             if self.insert_db_log_to_db(log_entry):
                 inserted += 1
         
-        logger.info(f"DB collection complete: {len(logs)} collected, {inserted} inserted")
+        logger.info(f"DB collection complete: {len(logs)} collected, {inserted} inserted (source: {source})")
         
         return {
             'queries_collected': len(logs),
             'logs_inserted': inserted,
-            'source': 'file' if logs and self.check_general_log_enabled() else 'processlist'
+            'source': source
         }
 
 
