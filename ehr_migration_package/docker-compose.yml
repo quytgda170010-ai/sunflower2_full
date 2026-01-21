@@ -92,6 +92,7 @@ services:
     depends_on:
       - opa
       - keycloak
+      - ehr-core
     networks: [ ehr-net ]
 
   # ===== STACK B: EMR SYSTEM =====

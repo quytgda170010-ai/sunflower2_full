@@ -641,7 +641,14 @@ function SecurityMonitoring({ initialMode = 'logs' }) {
           return true;
         }
 
-        // 3. HIDE operation logs (EMR-READ, RX-ISSUE, SESSION_LOG without auth purpose)
+        // 3. SHOW EMR Access logs if they are present (meaning they passed backend filter)
+        if (record.log_type === 'EMR_ACCESS_LOG' ||
+          record.log_type === 'encounter_log' ||
+          record.log_type === 'prescription_log') {
+          return true;
+        }
+
+        // 4. HIDE other operation logs (normal usage without auth purpose)
         // These are normal user activities, not security/compliance events
         return false;
       }

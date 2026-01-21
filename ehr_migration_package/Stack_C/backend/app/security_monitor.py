@@ -207,7 +207,9 @@ class SecurityMonitor:
                 # Action giờ là tên hành động tiếng Việt (VD: "Xem hồ sơ bệnh nhân")
                 # Không cần filter action nữa, chỉ cần log_type
                 where_clauses.append("""(
-                    a.log_type IN ('DB_LOG', 'db_log')
+                    a.log_type IN ('DB_LOG', 'db_log', 'emr_access_log', 'EMR_ACCESS_LOG', 
+                                 'encounter_log', 'ENCOUNTER_LOG', 
+                                 'prescription_log', 'PRESCRIPTION_LOG')
                 )""")
             elif log_type == 'ENCOUNTER_LOG':
                 # Tab "Nội dung khám bệnh" - Lọc DB logs liên quan khám bệnh
