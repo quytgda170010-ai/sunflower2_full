@@ -20,19 +20,19 @@ services:
     restart: unless-stopped
 
 
-  opa:
     image: openpolicyagent/opa:latest
     container_name: opa
+    entrypoint: ["sh", "-c"]
     command:
-      - run
-      - --server
-      - --addr=0.0.0.0:8181
-      - /policies
+      - |
+        /opa run --server --addr=0.0.0.0:8181 --config-file=/opa_config.yaml /policies > /opa-logs/decisions.log 2>&1
     ports:
       - "8181:8181"
     volumes:
       - ./opa/policies/policy.rego:/policies/policy.rego:ro
       - ./opa/policies/helpers.rego:/policies/helpers.rego:ro
+      - ./opa/opa_config.yaml:/opa_config.yaml:ro
+      - ./opa/logs:/opa-logs
     networks:
       - ehr-net
     restart: unless-stopped

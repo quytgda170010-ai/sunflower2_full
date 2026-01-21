@@ -199,103 +199,52 @@ class SecurityMonitor:
                 where_clauses.append("a.timestamp >= DATE_SUB(NOW(), INTERVAL %s SECOND)")
                 params.append(since_seconds)
             
-            if log_type == 'SESSION_LOG':
-                # Filter login/logout session logs from:
-                # 1. Keycloak session logs (log_type = SESSION_LOG)
-                # 2. Keycloak SSO logs with login action (log_type = SYSTEM_AUTH_LOG)
-                # 3. OpenEMR access logs that represent a login session
+    
+            # Frontend tab "Log đăng nhập" giờ gửi SYSTEM_AUTH_LOG thay vì SESSION_LOG
+            
+            if log_type == 'EMR_ACCESS_LOG':
+                # Tab "Log thao tác EMR" - Hiển thị SQL queries từ DB Collector
+                # Action giờ là tên hành động tiếng Việt (VD: "Xem hồ sơ bệnh nhân")
+                # Không cần filter action nữa, chỉ cần log_type
                 where_clauses.append("""(
-                    a.log_type IN ('SESSION_LOG', 'session_log')
-                    OR (a.log_type IN ('SYSTEM_AUTH_LOG', 'system_auth', 'system_auth_log') AND (a.action LIKE '%Đăng nhập%' OR a.action LIKE '%login%' OR a.action LIKE '%Login%'))
-                    OR (a.log_type IN ('emr_access_log', 'EMR_ACCESS_LOG', NULL) AND a.action = 'Access' AND a.purpose = 'Hành chính')
-                    OR (a.log_type IS NULL AND a.action = 'Access')
-                )""")
-            elif log_type == 'EMR_ACCESS_LOG':
-                # Filter meaningful EMR operations only (not generic 'Access' logs)
-                # Include: View/Update patient, View/Create appointment, View billing
-                # Exclude: Generic 'Access', 'Xem Access', 'Xem dữ liệu', SECURITY_ALERT
-                where_clauses.append("""(
-                    (a.log_type IN ('emr_access_log', 'EMR_ACCESS_LOG') OR a.log_type IS NULL OR a.log_type = '')
-                    AND (
-                        a.action LIKE '%bệnh nhân%'
-                        OR a.action LIKE '%patient%'
-                        OR a.action LIKE '%lịch hẹn%'
-                        OR a.action LIKE '%appointment%'
-                        OR a.action LIKE 'View patient%'
-                        OR a.action LIKE 'View billing%'
-                        OR a.action LIKE 'View appointment%'
-                        OR a.action LIKE 'Xem thông tin%'
-                        OR a.action LIKE 'Cập nhật%'
-                        OR a.action LIKE 'Tạo lịch%'
-                        OR a.action LIKE 'Thêm bệnh nhân%'
-                        OR a.uri LIKE '%/patients%'
-                        OR a.uri LIKE '%/appointments%'
-                        OR a.uri LIKE '%/bills%'
-                    )
-                    AND a.action NOT IN ('Access', 'Xem Access', 'Xem dữ liệu')
-                    AND a.action NOT LIKE '%BRUTE%'
-                    AND COALESCE(a.log_type, '') != 'SECURITY_ALERT'
+                    a.log_type IN ('DB_LOG', 'db_log')
                 )""")
             elif log_type == 'ENCOUNTER_LOG':
-                # Filter logs nội dung khám bệnh: medical-records, encounter, diagnosis
-                # Include Access logs with medical-records URI, exclude system logs (DLP, TLS) and prescription logs
+                # Tab "Nội dung khám bệnh" - Lọc DB logs liên quan khám bệnh
+                # Action names từ _generate_action_name(): "Xem hồ sơ khám bệnh", "Xem phiếu khám"
                 where_clauses.append("""(
-                    (
-                        a.action LIKE '%khám%'
-                        OR a.action LIKE '%encounter%'
-                        OR a.action LIKE '%diagnosis%'
-                        OR a.action LIKE '%consultation%'
-                        OR a.action LIKE '%medical%'
-                        OR a.action LIKE 'View medical%'
-                        OR a.uri LIKE '%/medical-records%'
-                        OR a.uri LIKE '%/encounters%'
-                        OR a.uri LIKE '%/visits%'
+                    a.log_type IN ('DB_LOG', 'db_log')
+                    AND (
+                        a.action LIKE '%hồ sơ khám bệnh%'
+                        OR a.action LIKE '%phiếu khám%'
                     )
-                    AND a.action NOT IN ('TLS_HANDSHAKE', 'DLP_COMPLIANCE', 'Xem dữ liệu', 'Create prescription')
-                    AND a.action NOT LIKE '%prescription%'
-                    AND a.action NOT LIKE '%thuốc%'
-                    AND a.action NOT LIKE '%hàng chờ%'
-                    AND a.action NOT LIKE '%queue%'
-                    AND COALESCE(a.changed_fields, '') NOT LIKE '%"record_type": "prescription"%'
-                    AND COALESCE(a.changed_fields, '') NOT LIKE '%"record_type":"prescription"%'
-                    AND COALESCE(a.log_type, '') NOT IN ('system_tls', 'system_dlp', 'system_auth', 'SYSTEM_TLS_LOG', 'SYSTEM_DLP_LOG', 'SYSTEM_AUTH_LOG', 'SECURITY_ALERT')
                 )""")
             elif log_type == 'PRESCRIPTION_LOG':
-                # Filter logs nội dung thuốc: prescription, medication, drug
-                # Only catch: 
-                # 1. Logs with action containing thuốc/prescription/medication/drug
-                # 2. Logs with log_type = PRESCRIPTION_LOG
-                # 3. POST/PUT/PATCH requests to /medical-records (not GET)
+                # Tab "Nội dung thuốc" - Lọc DB logs liên quan đơn thuốc
+                # Action names từ _generate_action_name(): "Xem đơn thuốc", "Kê đơn thuốc", "Cập nhật đơn thuốc"
                 where_clauses.append("""(
-                    a.action LIKE '%thuốc%' 
-                    OR a.action LIKE '%prescription%'
-                    OR a.action LIKE '%medication%'
-                    OR a.action LIKE '%drug%'
-                    OR a.log_type IN ('PRESCRIPTION_LOG', 'prescription_log')
-                    OR (a.uri LIKE '%/medical-records%' AND a.method IN ('POST', 'PUT', 'PATCH'))
+                    a.log_type IN ('DB_LOG', 'db_log')
+                    AND a.action LIKE '%thuốc%'
                 )""")
-            elif log_type == 'BACKUP_ENCRYPTION_LOG':
-                # Filter logs backup và encryption
-                where_clauses.append("(a.log_type IN ('BACKUP_ENCRYPTION_LOG', 'backup_encryption_log', 'system_encryption', 'emr_encryption'))")
-            elif log_type == 'SYSTEM_TLS_LOG':
-                # Filter logs TLS/SSL/Gateway
-                where_clauses.append("(a.log_type IN ('SYSTEM_TLS_LOG', 'system_tls', 'system_tls_log'))")
+            # XÓA: BACKUP_ENCRYPTION_LOG filter - Không có Collector thu thập
+            # XÓA: DB_LOG filter - Trùng với EMR_ACCESS_LOG, Frontend không có tab này
+            
+            elif log_type == 'SYSTEM_TLS_LOG' or log_type == 'GATEWAY_LOG':
+                # Tab "Gateway" - Lọc HTTP requests từ gateway_collector.py
+                # Accept cả SYSTEM_TLS_LOG GATEWAY_LOG (tên mới)
+                where_clauses.append("(a.log_type IN ('GATEWAY_LOG', 'gateway_log'))")
             elif log_type == 'SYSTEM_AUTH_LOG':
                 # Filter logs xác thực SSO/Keycloak
                 where_clauses.append("(a.log_type IN ('SYSTEM_AUTH_LOG', 'system_auth', 'system_auth_log'))")
-            elif log_type == 'SYSTEM_DLP_LOG':
-                # Filter logs DLP chống rò rỉ dữ liệu
-                where_clauses.append("(a.log_type IN ('SYSTEM_DLP_LOG', 'system_dlp', 'system_dlp_log'))")
             elif log_type == 'SECURITY_ALERT':
-                # Filter security alerts: WAF blocked (SQLi, XSS) and brute force attacks
-                # Only match logs with explicit SECURITY_ALERT log_type or WAF_BLOCK operation
+                # Filter security alerts: WAF blocked (SQLi, XSS), brute force attacks, AND OPA policy decisions
+                # THÊM POLICY_LOG từ opa_collector.py để hiển thị quyết định ALLOW/DENY
                 where_clauses.append("""(
-                    a.log_type IN ('SECURITY_ALERT', 'security_alert')
+                    a.log_type IN ('SECURITY_ALERT', 'security_alert', 'POLICY_LOG')
                     OR a.operation = 'WAF_BLOCK'
                 )""")
             
             where_sql = " AND ".join(where_clauses) if where_clauses else "1=1"
-            logger.info(f"PRESCRIPTION_LOG filter - log_type: {log_type}, where_sql: {where_sql}")
             
             # Count total (use alias for consistency)
             count_query = f"SELECT COUNT(*) as total FROM access_logs a WHERE {where_sql}"

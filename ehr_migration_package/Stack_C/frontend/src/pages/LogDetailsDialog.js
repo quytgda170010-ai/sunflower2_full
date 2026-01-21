@@ -2898,7 +2898,7 @@ export default function LogDetailsDialog({
                         })()}
 
                         {/* Section 2.6: Chi tiết TLS (chỉ hiện khi log_type là system_tls) */}
-                        {(selectedLog.log_type === 'system_tls' || selectedLog.log_type === 'SYSTEM_TLS_LOG') && (() => {
+                        {(selectedLog.log_type === 'system_tls' || selectedLog.log_type === 'SYSTEM_TLS_LOG' || selectedLog.log_type === 'GATEWAY_LOG' || selectedLog.log_type === 'gateway_log') && (() => {
                             const details = typeof selectedLog.details === 'string' ? JSON.parse(selectedLog.details || '{}') : (selectedLog.details || {});
                             return (
                                 <>

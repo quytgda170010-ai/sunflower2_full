@@ -1114,7 +1114,8 @@ function SecurityMonitoring({ initialMode = 'logs' }) {
     const cards = [];
 
     switch (selectedLog.log_type) {
-      case 'SYSTEM_TLS_LOG': {
+      case 'GATEWAY_LOG':
+      case 'SYSTEM_TLS_LOG': {  // Backward compatibility
         // Format status code với giải thích dễ hiểu
         const statusCode = details.status || selectedLog.status;
         let statusDisplay = 'N/A';
@@ -1717,19 +1718,19 @@ function SecurityMonitoring({ initialMode = 'logs' }) {
 
   const logTypeFilters = [
     // User Compliance Logs
-    // Log đăng nhập của user: chỉ hiển thị các bản ghi SESSION_LOG
-    // (purpose='authentication' hoặc URI /admin/login), tách biệt
-    // hoàn toàn với log xác thực SSO (SYSTEM_AUTH_LOG).
-    { value: 'SESSION_LOG', label: 'Log đăng nhập' },
+    // Log đăng nhập của user: SYSTEM_AUTH_LOG từ Keycloak (LOGIN, LOGOUT, LOGIN_ERROR)
+    // Tất cả Keycloak events đều ghi vào SYSTEM_AUTH_LOG
+    { value: 'SYSTEM_AUTH_LOG', label: 'Log đăng nhập' },
     { value: 'EMR_ACCESS_LOG', label: 'Log thao tác EMR' },
     { value: 'ENCOUNTER_LOG', label: 'Nội dung khám bệnh' },
     { value: 'PRESCRIPTION_LOG', label: 'Nội dung thuốc' },
-    { value: 'BACKUP_ENCRYPTION_LOG', label: 'Backup & Encryption' },
+    // XÓA: { value: 'BACKUP_ENCRYPTION_LOG', label: 'Backup & Encryption' } - KHÔNG CÓ COLLECTOR
 
-    // System Compliance Logs (chỉ giữ 3 loại quan trọng)
-    { value: 'SYSTEM_TLS_LOG', label: 'TLS / Gateway' },
-    { value: 'SYSTEM_AUTH_LOG', label: 'Xác thực SSO' },
-    { value: 'SYSTEM_DLP_LOG', label: 'DLP / chống rò rỉ' },
+
+    // System Compliance Logs
+    { value: 'GATEWAY_LOG', label: 'Gateway' },
+    // XÓA: { value: 'SYSTEM_AUTH_LOG', label: 'Xác thực SSO' } - BỊ TRÙNG VỚI "Log đăng nhập"
+    // XÓA: { value: 'SYSTEM_DLP_LOG', label: 'DLP / chống rò rỉ' } - KHÔNG CÓ DLP COLLECTOR
 
     // Security Alert Logs (Brute Force, SQL Injection, XSS attacks)
     { value: 'SECURITY_ALERT', label: '🛡️ Log Security' },

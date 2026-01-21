@@ -15,7 +15,9 @@ services:
       DB_NAME: ehr_core
       DB_USER: openemr
       DB_PASSWORD: Openemr!123
-      LOG_FILE_PATH: /shared/nginx-logs/access.json
+      GATEWAY_LOG_FILE: /shared/nginx-logs/access.json
+      OPA_LOG_FILE: /shared/opa-logs/decisions.log
+      MARIADB_LOG_FILE: /var/log/mysql/queries.log
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_REALM: ClinicRealm
       KEYCLOAK_CLIENT_ID: siem-dashboard
@@ -23,6 +25,7 @@ services:
       EHR_CORE_URL: http://ehr-core:8000
     volumes:
       - ../ehr-gw/gateway/logs:/shared/nginx-logs:ro
+      - ../ehr-gw/opa/logs:/shared/opa-logs:ro
     networks:
       - ehr-net
     healthcheck:

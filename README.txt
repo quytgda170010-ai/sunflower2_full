@@ -163,10 +163,12 @@ Sau khi cài đặt thành công, truy cập:
 
 | Người dùng     | Username     | Password     | Vai trò          |
 |----------------|--------------|--------------|------------------|
-| Admin          | admin        | admin        | Administrator    |
-| Bác sĩ         | dr.nguyen    | test123      | Physician        |
-| Y tá           | nurse.tran   | test123      | Nurse            |
-| IT Admin       | it.admin     | test123      | IT Support       |
+| Admin IT       | admin.user   | hoangvip217  | Administrator    |
+| Bác sĩ         | bs.noikhoa   | hoangvip217  | Physician        |
+| Y tá           | dd.ha        | hoangvip217  | Nurse            |
+| KTV XN         | ktv.dung     | hoangvip217  | Lab Tech         |
+| Lễ tân         | letan.hoa    | hoangvip217  | Receptionist     |
+| Admin          | admin        | hoangvip217  | Admin            |
 
 ---
 
@@ -209,42 +211,6 @@ docker-compose build --no-cache siem-frontend
 docker-compose up -d siem-frontend
 ```
 
----
-
-## 🌐 Deploy lên Server (Production)
-
-### 1. Cập nhật IP/Domain trong docker-compose.yml
-
-Thay đổi `103.82.39.79` thành IP hoặc domain của server:
-
-```yaml
-REACT_APP_API_URL: http://YOUR_SERVER_IP:3000
-REACT_APP_KEYCLOAK_URL: http://YOUR_SERVER_IP:8080
-```
-
-### 2. Build và chạy trên server
-
-```bash
-# SSH vào server
-ssh root@YOUR_SERVER_IP
-
-# Clone repo
-git clone https://github.com/quytgda170010-ai/sunflower2_full.git
-cd sunflower2_full/ehr_migration_package
-
-# Build tất cả images
-docker-compose build
-
-# Chạy
-docker-compose up -d
-
-# Import data (nếu có)
-docker exec -i mariadb mysql -u root -pemrdbpass ehr_core < ../database_backup.sql
-docker exec -i pg-keycloak psql -U keycloak keycloak < ../keycloak_backup.sql
-docker restart keycloak
-```
-
----
 
 ## 📁 Cấu trúc thư mục
 

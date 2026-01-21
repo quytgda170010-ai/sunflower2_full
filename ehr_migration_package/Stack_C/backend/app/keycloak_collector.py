@@ -53,6 +53,8 @@ class KeycloakEventCollector:
         username_lower = username.lower()
         if 'admin' in username_lower:
             return 'admin'
+        elif 'doctor' in username_lower or username_lower.startswith('bs.'):
+            return 'doctor'  # bs. = bác sĩ (doctor)
         elif 'nurse' in username_lower or username_lower.startswith('dd.'):
             return 'nurse'
         elif 'letan' in username_lower or 'receptionist' in username_lower:
@@ -192,9 +194,7 @@ class KeycloakEventCollector:
                 'client_id': event.get('clientId', ''),
                 'session_id': event.get('sessionId', ''),
                 'auth_method': event.get('details', {}).get('auth_method', 'openid-connect'),
-                'is_brute_force': is_brute_force,
-                'rule_code': 'R-IAM-06' if is_brute_force else ('R-IAM-03' if has_violation else 'SYS-AUTH-01'),
-                'rule_name': 'Brute-force Protection' if is_brute_force else ('Authentication Failure' if has_violation else 'Authentication Success')
+                'is_brute_force': is_brute_force
             }
             
             # ROBUST DUPLICATE CHECK: Search for keycloak_event_id in details JSON

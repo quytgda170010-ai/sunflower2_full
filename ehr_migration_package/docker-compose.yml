@@ -308,6 +308,7 @@ services:
         condition: service_started
     volumes:
       - db_data:/var/lib/mysql:ro
+      - ./ehr-gw/gateway/logs:/var/log/gateway:ro
     networks: [ ehr-net ]
     healthcheck:
       test: [ "CMD-SHELL", "curl -f http://localhost:8003/health || exit 1" ]
