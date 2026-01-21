@@ -598,4 +598,3 @@ class SecurityMonitor:
         finally:
             cursor.close()
             conn.close()
-
