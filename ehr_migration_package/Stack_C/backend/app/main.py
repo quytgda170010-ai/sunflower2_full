@@ -16,6 +16,8 @@ from .user_service import UserService
 from .keycloak_collector import KeycloakEventCollector
 from .tls_collector import TLSCollector
 from .opa_collector import OPACollector
+from .db_collector import DatabaseCollector
+from .gateway_collector import GatewayCollector
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.triggers.cron import CronTrigger
@@ -136,9 +138,49 @@ scheduler.add_job(
     replace_existing=True
 )
 
+# ===== DATABASE COLLECTOR JOB =====
+def collect_db_logs_job():
+    """Background job to collect database query logs"""
+    try:
+        collector = DatabaseCollector()
+        result = collector.collect_and_process()
+        if result.get('logs_inserted', 0) > 0:
+            logger.info(f"Scheduled DB collection: {result.get('logs_inserted', 0)} logs inserted")
+    except Exception as e:
+        logger.error(f"Scheduled DB collection error: {e}")
+
+# Schedule DB collection every 60 seconds
+scheduler.add_job(
+    func=collect_db_logs_job,
+    trigger=IntervalTrigger(seconds=60),
+    id='db_collector',
+    name='Collect DB Logs',
+    replace_existing=True
+)
+
+# ===== GATEWAY COLLECTOR JOB =====
+def collect_gateway_logs_job():
+    """Background job to collect gateway/nginx logs"""
+    try:
+        collector = GatewayCollector()
+        result = collector.collect_and_process()
+        if result.get('logs_inserted', 0) > 0:
+            logger.info(f"Scheduled Gateway collection: {result.get('logs_inserted', 0)} logs inserted")
+    except Exception as e:
+        logger.error(f"Scheduled Gateway collection error: {e}")
+
+# Schedule Gateway collection every 60 seconds
+scheduler.add_job(
+    func=collect_gateway_logs_job,
+    trigger=IntervalTrigger(seconds=60),
+    id='gateway_collector',
+    name='Collect Gateway Logs',
+    replace_existing=True
+)
+
 # Start scheduler
 scheduler.start()
-logger.info("APScheduler started - Keycloak (60s), TLS (300s), Behavior Cache (60s), OPA (30s), Email Report (6AM daily)")
+logger.info("APScheduler started - Keycloak (60s), TLS (300s), Behavior Cache (60s), OPA (30s), DB (60s), Gateway (60s), Email Report (6AM daily)")
 
 # Shut down the scheduler when exiting the app
 atexit.register(lambda: scheduler.shutdown())
