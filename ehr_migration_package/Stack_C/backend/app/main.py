@@ -15,9 +15,6 @@ from .behavior_monitor import BehaviorMonitor
 from .user_service import UserService
 from .keycloak_collector import KeycloakEventCollector
 from .tls_collector import TLSCollector
-from .opa_collector import OPACollector
-from .db_collector import DatabaseCollector
-from .gateway_collector import GatewayCollector
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.triggers.cron import CronTrigger
@@ -108,26 +105,6 @@ scheduler.add_job(
     replace_existing=True
 )
 
-# ===== OPA DECISION LOG COLLECTION JOB =====
-def collect_opa_decisions_job():
-    """Background job to collect OPA decision logs periodically"""
-    try:
-        collector = OPACollector()
-        result = collector.collect_and_process()
-        if result.get('inserted', 0) > 0:
-            logger.info(f"Scheduled OPA collection: {result.get('inserted', 0)} decisions inserted")
-    except Exception as e:
-        logger.error(f"Scheduled OPA collection error: {e}")
-
-# Schedule OPA collection every 30 seconds
-scheduler.add_job(
-    func=collect_opa_decisions_job,
-    trigger=IntervalTrigger(seconds=30),
-    id='opa_collector',
-    name='Collect OPA Decisions',
-    replace_existing=True
-)
-
 # ===== OFF-HOURS EMAIL REPORT JOB =====
 # Send email report at 6:00 AM daily with logs from 18:00-06:00
 scheduler.add_job(
@@ -138,49 +115,9 @@ scheduler.add_job(
     replace_existing=True
 )
 
-# ===== DATABASE COLLECTOR JOB =====
-def collect_db_logs_job():
-    """Background job to collect database query logs"""
-    try:
-        collector = DatabaseCollector()
-        result = collector.collect_and_process()
-        if result.get('logs_inserted', 0) > 0:
-            logger.info(f"Scheduled DB collection: {result.get('logs_inserted', 0)} logs inserted")
-    except Exception as e:
-        logger.error(f"Scheduled DB collection error: {e}")
-
-# Schedule DB collection every 60 seconds
-scheduler.add_job(
-    func=collect_db_logs_job,
-    trigger=IntervalTrigger(seconds=60),
-    id='db_collector',
-    name='Collect DB Logs',
-    replace_existing=True
-)
-
-# ===== GATEWAY COLLECTOR JOB =====
-def collect_gateway_logs_job():
-    """Background job to collect gateway/nginx logs"""
-    try:
-        collector = GatewayCollector()
-        result = collector.collect_and_process()
-        if result.get('logs_inserted', 0) > 0:
-            logger.info(f"Scheduled Gateway collection: {result.get('logs_inserted', 0)} logs inserted")
-    except Exception as e:
-        logger.error(f"Scheduled Gateway collection error: {e}")
-
-# Schedule Gateway collection every 60 seconds
-scheduler.add_job(
-    func=collect_gateway_logs_job,
-    trigger=IntervalTrigger(seconds=60),
-    id='gateway_collector',
-    name='Collect Gateway Logs',
-    replace_existing=True
-)
-
 # Start scheduler
 scheduler.start()
-logger.info("APScheduler started - Keycloak (60s), TLS (300s), Behavior Cache (60s), OPA (30s), DB (60s), Gateway (60s), Email Report (6AM daily)")
+logger.info("APScheduler started - Keycloak (60s), TLS (300s), Behavior Cache (60s), Email Report (6AM daily)")
 
 # Shut down the scheduler when exiting the app
 atexit.register(lambda: scheduler.shutdown())
@@ -1329,4 +1266,40 @@ async def get_update_history():
             "total": 0,
             "error": str(e)
         }
+
+@app.get("/api/security-logs")
+async def get_security_logs_api(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=1000),
+    log_type: Optional[str] = Query(None),
+    since_seconds: int = Query(86400, ge=1),
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None)
+):
+    """
+    Get filtered security logs for Frontend tabs
+    
+    This endpoint is called by Frontend when user clicks different tabs:
+    - Log đăng nhập (SYSTEM_AUTH_LOG) → Keycloak logs
+    - Log thao tác EMR (EMR_ACCESS_LOG) → DB logs (SQL queries)
+    - Nội dung khám bệnh (ENCOUNTER_LOG) → Filtered DB logs
+    - Nội dung thuốc (PRESCRIPTION_LOG) → Filtered DB logs  
+    - Gateway (GATEWAY_LOG) → HTTP requests
+    - Log Security (SECURITY_ALERT) → Security events
+    """
+    try:
+        monitor = SecurityMonitor()
+        logs, total = monitor.get_security_logs(
+            page=page,
+            page_size=page_size,
+            log_type=log_type,
+            since_seconds=since_seconds,
+            date_from=date_from,
+            date_to=date_to
+        )
+        return (logs, total)
+    except Exception as e:
+        logger.error(f"Error getting security logs: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
