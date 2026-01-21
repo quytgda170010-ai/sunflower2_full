@@ -15,6 +15,7 @@ from .behavior_monitor import BehaviorMonitor
 from .user_service import UserService
 from .keycloak_collector import KeycloakEventCollector
 from .tls_collector import TLSCollector
+from .opa_collector import OPACollector
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.triggers.cron import CronTrigger
@@ -105,6 +106,26 @@ scheduler.add_job(
     replace_existing=True
 )
 
+# ===== OPA DECISION LOG COLLECTION JOB =====
+def collect_opa_decisions_job():
+    """Background job to collect OPA decision logs periodically"""
+    try:
+        collector = OPACollector()
+        result = collector.collect_and_process()
+        if result.get('inserted', 0) > 0:
+            logger.info(f"Scheduled OPA collection: {result.get('inserted', 0)} decisions inserted")
+    except Exception as e:
+        logger.error(f"Scheduled OPA collection error: {e}")
+
+# Schedule OPA collection every 30 seconds
+scheduler.add_job(
+    func=collect_opa_decisions_job,
+    trigger=IntervalTrigger(seconds=30),
+    id='opa_collector',
+    name='Collect OPA Decisions',
+    replace_existing=True
+)
+
 # ===== OFF-HOURS EMAIL REPORT JOB =====
 # Send email report at 6:00 AM daily with logs from 18:00-06:00
 scheduler.add_job(
@@ -117,7 +138,7 @@ scheduler.add_job(
 
 # Start scheduler
 scheduler.start()
-logger.info("APScheduler started - Keycloak (60s), TLS (300s), Behavior Cache (60s), Email Report (6AM daily)")
+logger.info("APScheduler started - Keycloak (60s), TLS (300s), Behavior Cache (60s), OPA (30s), Email Report (6AM daily)")
 
 # Shut down the scheduler when exiting the app
 atexit.register(lambda: scheduler.shutdown())
