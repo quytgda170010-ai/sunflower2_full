@@ -105,6 +105,29 @@ scheduler.add_job(
     replace_existing=True
 )
 
+# ===== GATEWAY LOGS COLLECTOR (OPTIONAL - Redundant with lua logs) =====
+from .gateway_collector import GatewayCollector
+
+def collect_gateway_logs_job():
+    """Background job to collect Gateway logs from file (legacy/redundant)"""
+    try:
+        collector = GatewayCollector()
+        result = collector.collect_and_process()
+        if result['logs_inserted'] > 0:
+            logger.info(f"Scheduled Gateway log collection: {result['logs_inserted']} logs inserted")
+    except Exception as e:
+        logger.error(f"Scheduled Gateway log collection error: {e}")
+
+# Schedule Gateway log collection every 30 seconds
+scheduler.add_job(
+    func=collect_gateway_logs_job,
+    trigger=IntervalTrigger(seconds=30),
+    id='gateway_collector',
+    name='Collect Gateway Logs',
+    replace_existing=True
+)
+
+
 # ===== OFF-HOURS EMAIL REPORT JOB =====
 # Send email report at 6:00 AM daily with logs from 18:00-06:00
 scheduler.add_job(
