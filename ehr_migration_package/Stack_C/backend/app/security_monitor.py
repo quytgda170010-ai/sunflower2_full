@@ -203,30 +203,27 @@ class SecurityMonitor:
             # Frontend tab "Log đăng nhập" giờ gửi SYSTEM_AUTH_LOG thay vì SESSION_LOG
             
             if log_type == 'EMR_ACCESS_LOG':
-                # Tab "Log thao tác EMR" - Hiển thị SQL queries từ DB Collector
+                # Tab "Log thao tác EMR" - Hiển thị SQL queries từ DB Collector và EMR access logs
                 # Loại trừ các logs liên quan security (SQL Injection, XSS, etc.)
                 where_clauses.append("""(
-                    a.log_type IN ('DB_LOG', 'db_log')
+                    a.log_type IN ('DB_LOG', 'db_log', 'emr_access_log', 'EMR_ACCESS_LOG')
                     AND a.action NOT LIKE '%SQL Injection%'
                     AND a.action NOT LIKE '%tấn công%'
                     AND a.action NOT LIKE '%XSS%'
-                    AND a.purpose != 'security_alert'
+                    AND a.action NOT LIKE '%WAF%'
+                    AND (a.purpose IS NULL OR a.purpose NOT IN ('security_alert', 'security_monitoring'))
                 )""")
             elif log_type == 'ENCOUNTER_LOG':
-                # Tab "Nội dung khám bệnh" - Lọc DB logs liên quan khám bệnh
-                # Action names từ _generate_action_name(): "Xem hồ sơ khám bệnh", "Xem phiếu khám"
+                # Tab "Nội dung khám bệnh" - Lọc logs liên quan khám bệnh
                 where_clauses.append("""(
-                    a.log_type IN ('DB_LOG', 'db_log')
-                    AND (
-                        a.action LIKE '%hồ sơ khám bệnh%'
-                        OR a.action LIKE '%phiếu khám%'
-                    )
+                    (a.log_type IN ('DB_LOG', 'db_log', 'emr_access_log', 'EMR_ACCESS_LOG')
+                     AND (a.action LIKE '%hồ sơ khám bệnh%' OR a.action LIKE '%phiếu khám%' OR a.action LIKE '%khám%'))
                 )""")
             elif log_type == 'PRESCRIPTION_LOG':
-                # Tab "Nội dung thuốc" - Lọc DB logs liên quan đơn thuốc
-                # Action names từ _generate_action_name(): "Xem đơn thuốc", "Kê đơn thuốc", "Cập nhật đơn thuốc"
+                # Tab "Nội dung thuốc" - Lọc logs liên quan đơn thuốc
+                # Bao gồm cả prescription_log type (21 entries trong DB)
                 where_clauses.append("""(
-                    a.log_type IN ('DB_LOG', 'db_log')
+                    a.log_type IN ('DB_LOG', 'db_log', 'emr_access_log', 'prescription_log', 'PRESCRIPTION_LOG')
                     AND a.action LIKE '%thuốc%'
                 )""")
             # XÓA: BACKUP_ENCRYPTION_LOG filter - Không có Collector thu thập
